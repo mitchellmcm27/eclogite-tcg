@@ -1,93 +1,106 @@
 Cite this code using the following DOI: [10.5281/zenodo.10835976](https://doi.org/10.5281/zenodo.10835976).
 
-## Clone the repo
+## Get started using Docker
+
+The following command downloads a prebuilt Docker image, starts an interactive container, and binds the local directory to a shared folder inside the container:
 
 ```bash
-git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git
-cd eclogite-tcg
+docker run -it --rm -v $PWD:/home/tfuser/shared/eclogite-tcg registry.gitlab.com/mitchellmcm27/eclogite-tcg
 ```
 
-This will also pull in the "TCG_SLB" code, which provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases through TCG, as a git subtree.
+The main benefit of using this Docker image is that it includes prebuilt binaries for the thermodynamic database (endmembers and phases) and reaction objects.
+Building these from scratch takes several hours.
 
-## Start a Docker container
-
-Build an image using the provided Dockerfile, using `-t` to give the image a human-readable tag.
-Start an interactive container, binding the local **eclogite-tcg** directory to **workspaces/eclogite-tcg** inside the container.
-
-```bash
-docker build -t eclogite-tcg .
-docker run -it --rm -v $PWD:/workspaces/eclogite-tcg eclogite-tcg
-```
-Alternatively, open the **eclogite-tcg** directory in VSCode and use the Dev Containers extension to automatically build and re-open the repository inside a Docker container.
+The Docker container also automatically includes several useful dependencies.
+The Docker container includes an installation of ThermoCodegen (TCG), which is required for running the models.
+The present repository is automatically cloned into the Docker image at **/home/tfuser/shared/eclogite-tcg/**, along with the *TCG_SLB* codes.
+*TCG_SLB* provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases through TCG.
+Compatible installations of Python (including numpy, matplotlib, and scipy), Julia, and the equilibrium thermodynamics software Perple_X are also included.
 
 ## Thermodynamic database and reactions
 
-A custom thermodynamic database based on Stixrude and Lithgow-Bertelloni (2021) is included as **tcg_slb/database/tcg_stx21_database.tar.gz**.
-The scripts, source code, and data for generating this database are also provided, but doing so is not necessary.
+A custom thermodynamic database using the data from Stixrude and Lithgow-Bertelloni (2021) is included as **tcg_slb/database/tcg_stx21_database.tar.gz**.
+Although the scripts, source code, and data for generating this database are provided, doing so is not necessary as long as the **.tar.gz** file is in place.
 
-Reactions are included as **\*.rxml** files.
-Because generating the C++ code for these reactions can take several hours, pre-built binaries and Python bindings are included, which are compatible with the Docker image.
+Descriptions of the eclogitization reactions are included as **\*.rxml** files.
+Because generating the C++ code for these reactions can take several hours, the provided Docker image includes pre-built binaries.
+Additional reactions can be added, but then the reactions will need to be re-built.
 
 If reactions are edited and need to be re-built, you can do so as follows:
 
 ```bash
 cd tcg_slb
 scripts/generate_reactions_eclogite -v 21
-scripts/build-reactions database/reactions/eclogitization_2024_stx21_rx.rxml
+scripts/build_reactions database/reactions/[name].rxml
 ```
+
+Note that the ``build_reactions`` command can take several hours, depending mainly on the number of phases and endmembers. It is thus recommended, but not necessary, to pass the name of the exact reaction that needs to be built, as shown above.
+
+The `scripts/generate_reactions` and `scripts/generate_reactions_eclogite` files provide examples of how to generate a set of reaction descriptions (**.rxml** files) between endmembers of a specific thermodynamic database.
 
 ## Model calculations
 
-Model calculation scripts are in the **models** directory.
+Model calculations are provided as Python scripts in the **models** directory.
 
 ```bash
 cd models
 ```
 
-Four python scripts are given as follows:
+The following 4 files are included:
 
-- `python3 parallel_pd.py` generates a (_T_,_P_) pseudosection for comparing density with Perple_X results.
-- `python3 parallel_profile.py` generates a 1-d profile through (_T_,_P_)-space for comparing phase mode with Perple_X results.
-- `python3 parallel_experiment2.py` runs the geodynamic model of crustal thickening at the Moho.
+- `parallel_experiment2.py` runs the geodynamic model of crustal thickening at the Moho.
+- `parallel_pd.py` generates a (_T_,_P_) pseudosection for comparing density with Perple_X results.
+- `parallel_profile.py` generates a 1-d profile through (_T_,_P_)-space for comparing phase mode with Perple_X results.
 - `damkohler-fit.ipynb` shows how Damkohler number is fit to empirical data.
 
-In most cases, you can pass the name of any pre-defined composition that exists in the **models/perple_x/compositions.json** file. 
-For example, `python3 parallel_pd.py -c hacker_2015_md_xenolith`.
 By default the **parallel_\*** scripts use all available CPU cores.
 
 Arguments can be passed as follows to customize the model runs:
 
-| CLI argument    |  Purpose                           | Default |
-|-----------------|------------------------------------|---------|
-|   `-n [int]`    | Number of CPU processes to use     | `mp.cpu_count()` |
-|   `-e [float]`  | Scaled ending time                 |  1               |
-|   `-c [string]` | Bulk composition to use, by name   | an array of 4 compositions |
+| CLI argument    |  Purpose                           | Default                      |
+|-----------------|------------------------------------|------------------------------|
+|   `-n [int]`    | Number of CPU processes to use     | `mp.cpu_count()`             |
+|   `-e [float]`  | Dimensionless ending time          | 1                            |
+|   `-c [string]` | Bulk composition to use, by name   | an array of 4 compositions   |
 |   `-r [string]` | Reaction to use, by name           | eclogitization_2024_stx21_rx |
-|   `-q`          | Run in "quick mode" (_Da_ ≤ 1e4)   | False |
-|   `-f`          | Force model to recalculate results | False |
-|   `-p [string]`  | String to prefix output directory  | None |
+|   `-q`          | "Quick" run (_Da_ ≤ 1e4 only)      | False                        |
+|   `-f`          | Force model to re-run              | False                        |
+|   `-p [string]` | String to prefix output directory  | None                         |
 
-## Model outputs
+In most cases, you can use the `-c` argument to specifiy any Bulk composition, provided that Perple_X output data exist for it in the **perple_x/output** folder. 
+The only requirement to generate such data is an oxide bulk composition in mol% or wt% (see Perple_x section below).
+
+## Model output
 
 All outputs are saved to the **models/output** directory.
 Outputs will be automatically grouped into subdirectories based on the name of the reaction and composition.
 
-## Perple_X: Adding new compositions
+## Model initialization using Perple_X
 
-Perple_X outputs for equilibrium thermodynamic properties are included for several compositions defined in the **models/perple_x** directory.
-The python scripts read the text files output by Perple_X to initialize the reactive thermodynamic models.
+The model depends on equilibrium thermodynamics for initial composition.
+Perple_X solves for equilibrium thermodynamic properties using a Gibbs free energy minimization routine.
+The model scripts described above then read the text files generated by Perple_X to initialize the reactive thermodynamic models.
+Equilibrium data are already included for the bulk compositions defined in the accompanying manuscripts, so that the models can be run with no additional steps.
 
-If a composition needs to be added that does not already exist, use the following recipe:
+### Adding new compositions
 
-- Add the oxide percentages to **models/perple_x/compositions.json** file, making sure to use the same template as the existing compositions.
+Additional compositions are available in the **perple_x/compositions.json** file.
+This file can be edited to add any number of additional bulk compositions.
+The **compositions.json** file is ultimately read by Perple_X to solve for equilibrium thermodynamics.
+
+A Julia interface for programatically interacting with Perple_X (based on [StatGeochem](https://osf.io/tjhmw/)) is included as **perplex_api.jl**
+The script **solve_composition.jl** reads **compositions.json** file and passes the data to Perple_X.
+
+If a composition needs to be added that does not already exist, use the following steps:
+
+- Add the oxide percentages to **models/perple_x/compositions.json** file, making sure to use the same format as the existing compositions.
 - Within the **perple_x** directory, run `julia solve_composition.jl [name]` where `[name]` is the unique identifier, the key for the composition object in **compositions.json** (e.g., `sammon_2021_lower_crust`).
 - The composition can now be used in python scripts by passing the `-c [name]` argument as described above.
+- Pseudosection calculations in Perple_X (i.e., the **vertex** program) can take significant time, and thus only are only run if necessary. If a composition changes and **vertex** needs to be run again, pass the `-f` argument to `solve_composition` to force Perple_X to re-calculate everything from scratch.
 
-Note that the Docker image already has a installation of Perple_X.
+## Additional plotting in R
 
-## Additional analyses in R
-
-Some analyses are more convenient to perform in R after the models have been run.
+Some plots are more convenient to make in R after the models have been run.
 For this purpose, the model saves a summary of key outputs to a **_summary.csv** file.
 
 An R script for reading and working with this file is provided in the **./r** directory.
