@@ -1,5 +1,5 @@
 FROM registry.gitlab.com/enki-portal/thermocodegen:tf-focal
-
+USER root
 # Install Julia
 RUN pip install jill -U
 ENV PATH="/usr/local/bin:${PATH}"
@@ -27,7 +27,11 @@ RUN cd ~/resources/perplex-stable\
 #RUN R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp', 'latex2exp'))"
 
 # Build eclogite reactions
-RUN cd tcg_slb\
-    && rm --rf database/reactions\
+
+RUN cd shared && git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git
+RUN chmod +x shared/eclogite-tcg/tcg_slb/scripts/generate_reactions_eclogite
+RUN chmod +x shared/eclogite-tcg/tcg_slb/scripts/build_reactions
+RUN cd shared/eclogite-tcg/tcg_slb\
+    && rm -rf database/reactions/*.rxml\
     && scripts/generate_reactions_eclogite -v 21\
     && scripts/build_reactions
