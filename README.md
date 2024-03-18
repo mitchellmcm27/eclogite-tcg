@@ -1,3 +1,5 @@
+Cite this code using the following DOI: [10.5281/zenodo.10835976](https://doi.org/10.5281/zenodo.10835976).
+
 ## Clone the repo
 
 ```bash
