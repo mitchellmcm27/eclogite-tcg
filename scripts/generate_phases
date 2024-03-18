@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+
+import os,sys
+import pandas as pd
+import ast
+from thermocodegen.coder import coder
+import sympy as sym
+
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python'))
+from tcg_slb.phase import SLBPhase
+
+reference= 'generate_phases' 
+    
+def generate_phases(outdir,stixrude_version):
+  ph_postfix = "_stx21_ph" if stixrude_version == 21 else "_slb_ph"
+  csvfile = "stx21_phases.csv" if stixrude_version == 21 else "slb_phases.csv"
+  em_postfix = "_stx21_em" if stixrude_version == 21 else "_slb_em"
+  csv_headers = ['endmember_names','conversion_strs','X','d','W','sites','TC0','VD','SD']
+  if stixrude_version == 21:
+      csv_headers.append('W_V')
+  def literal_return(val):
+      try:
+          return ast.literal_eval(val)
+      except (ValueError, SyntaxError) as e:
+          return None
+  converter = dict([(h,literal_return) for h in csv_headers])
+  df = pd.read_csv(os.path.join(os.path.dirname(__file__), os.path.pardir, 'database', 'data', csvfile),skipinitialspace=True,converters=converter)
+
+  try:
+      os.mkdir(outdir)
+  except FileExistsError:
+      pass
+
+  for i, row in df.iterrows():
+      values_dict = row.to_dict()
+      name = values_dict.pop('name').replace('-','_')+ph_postfix
+      abbrev = values_dict.pop('abbrev')
+      endmember_names = values_dict.pop('endmember_names')
+      endmember_names = [em+em_postfix for em in endmember_names]
+      phase = SLBPhase(name, abbrev, reference, endmember_names, **values_dict)
+      if stixrude_version == 21:
+        phase.G = phase.G_2021()
+      # else, use the default G
+      print(phase.tofile(outdir))
+
+if __name__ == "__main__":
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser( \
+                           description="""Generate phmls for SLB thermodynamic database.""")
+    parser.add_argument('-o', '--outdir', action='store', metavar='outdir', 
+                        default=os.path.join(os.path.dirname(__file__), os.path.pardir, 'database', 'phases'), type=str, required=False,
+                        help='Output directory for phml files (defaults to ../database/phases relative to script).')
+    parser.add_argument('-v', '--stixrude_version', action="store", metavar="stixrude_version", default=11, type=int, required=False, help='Version of the Stixrude database as an integer (defaults to 11 for 2011).')
+    args = parser.parse_args()
+
+    generate_phases(args.outdir,args.stixrude_version)
