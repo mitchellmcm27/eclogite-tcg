@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+
+import pyparsing  as pypa
+from collections import OrderedDict
+import pandas as pd
+import re
+import os
+import numpy as np
+from thermocodegen.coder import coder
+elements = coder.PERIODIC_ORDER
+
+# implemented phase name changes
+phnames = OrderedDict([
+                       ('Ferropericlase','Magnesiowuestite'),
+                      ])
+# implemented endmember name changes
+emnames = OrderedDict([
+                        ('Majorite','MgMajorite'),
+                        ('MgCF','MgCaFerrite'),
+                        ('FeCF','FeCaFerrite'),
+                        ('NaCF','NaCaFerrite'),
+                        ('MgHpCpx','HPClinoenstatite'),
+                        ('FeHpCpx','HPClinoferrosilite'),
+                      ])
+
+phabbrev = OrderedDict([('Feldspar','plg'),
+                        ('Olivine','ol'),
+                        ('Wadsleyite','wa'),
+                        ('Ringwoodite','ri'),
+                        ('Perovskite','pv'),
+                        ('PostPerovskite','ppv'),
+                        ('Orthopyroxene','opx'),
+                        ('Clinopyroxene','cpx'),
+                        ('HPClinopyroxene','hpcpx'),
+                        ('Akimotoite','ak'),
+                        ('Garnet','gt'),
+                        ('Magnesiowuestite','mw'),
+                        ('CaFerritePhase','cf'),
+                        ('Spinel','sp'),
+                        ('Anorthite','an'),
+                        ('Albite','ab'),
+                        ('MgSpinel','mgsp'),
+                        ('Hercynite','hc'),
+                        ('Forsterite','fo'),
+                        ('Fayalite','fa'),
+                        ('MgWadsleyite','mgwa'),
+                        ('FeWadsleyite','fewa'),
+                        ('MgRingwoodite','mgri'),
+                        ('FeRingwoodite','feri'),
+                        ('Enstatite','en'),
+                        ('Ferrosilite','fs'),
+                        ('MgTschermaks','mgts'),
+                        ('OrthoDiopside','odi'),
+                        ('Diopside','di'),
+                        ('Hedenbergite','he'),
+                        ('Clinoenstatite','cen'),
+                        ('CaTschermaks','cats'),
+                        ('Jadeite','jd'),
+                        ('HPClinoenstatite','hpcen'),
+                        ('HPClinoferrosilite','hpcfs'),
+                        ('CaPerovskite','capv'),
+                        ('MgAkimotoite','mgak'),
+                        ('FeAkimotoite','feak'),
+                        ('AlAkimotoite','co'),
+                        ('Pyrope','py'),
+                        ('Almandine','al'),
+                        ('Grossular','gr'),
+                        ('MgMajorite','mgmj'),
+                        ('NaMajorite','jdmj'),
+                        ('Quartz','qtz'),
+                        ('Coesite','coes'),
+                        ('Stishovite','st'),
+                        ('Seifertite','seif'),
+                        ('MgPerovskite','mgpv'),
+                        ('FePerovskite','fepv'),
+                        ('AlPerovskite','rh2o3'),
+                        ('MgPostPerovskite','mppv'),
+                        ('FePostPerovskite','fppv'),
+                        ('AlPostPerovskite','appv'),
+                        ('Periclase','pe'),
+                        ('Wuestite','wu'),
+                        ('MgCaFerrite','mgcf'),
+                        ('FeCaFerrite','fecf'),
+                        ('NaCaFerrite','nacf'),
+                        ('Kyanite','ky'),
+                        ('Nepheline','neph')])
+
+
+# define basic punctuation and data types
+LBRACE,RBRACE,LPAREN,RPAREN,LBRACKET,RBRACKET,SEMI,COLON,COMMA,AT,EQUAL,HYPHEN = map(pypa.Suppress,"{}()[];:,@=-")
+IMPLEMENTATION  = pypa.Keyword("implementation").suppress()
+ID              = pypa.Keyword("id").suppress()
+INIT            = pypa.Keyword("init").suppress()
+IF              = pypa.Keyword("if").suppress()
+SELF            = pypa.Keyword("self").suppress()
+SUPER           = pypa.Keyword("super").suppress()
+INITWPARAMS     = pypa.Keyword("initWithParameters").suppress()
+NSARRAY         = pypa.Keyword("NSArray").suppress()
+ARRAY           = pypa.Keyword("arrayWithObjects").suppress()
+NSNUMBER        = pypa.Keyword("NSNumber").suppress()
+NUMBER          = pypa.Keyword("numberWithDouble").suppress()
+NIL             = pypa.Keyword("nil").suppress()
+ANDLANDAUTERMS  = pypa.Keyword("andLandauTerms").suppress()
+SETPHASEFORMULA = pypa.Keyword("setPhaseFormula").suppress()
+SETPHASENAME    = pypa.Keyword("setPhaseName").suppress()
+RETURN          = pypa.Keyword("return").suppress()
+END             = pypa.Keyword("end").suppress()
+
+# use parse actions to do parse-time conversion of values
+real    = pypa.Regex(r"[+-]?\d+\.\d*").setParseAction(lambda t:float(t[0]))
+integer = pypa.Regex(r"[+-]?\d+").setParseAction(lambda t:int(t[0]))
+number  = real | integer
+
+# parses a string enclosed in quotes, but strips off the quotes at parse time
+string = pypa.QuotedString('"')
+
+# define structure expressions
+nsnumber   = LBRACKET + NSNUMBER + NUMBER + COLON + number + RBRACKET + COMMA
+nsarray    = pypa.Group(LBRACKET + NSARRAY + ARRAY + COLON + pypa.OneOrMore(nsnumber) + NIL + RBRACKET)
+
+def parse_endmembers(srcdir):
+    filename = os.path.join(srcdir, "StixrudeStoichiometricPhases.m")
+
+    # define extra structure expressions
+    initparams = INITWPARAMS + COLON + nsarray
+    landau     = ANDLANDAUTERMS + COLON + nsarray
+    phaseform  = LBRACKET + SELF + SETPHASEFORMULA + COLON + AT + string + RBRACKET + SEMI
+    phasename  = LBRACKET + SELF + SETPHASENAME + COLON + AT + string + RBRACKET + SEMI
+    implemen   = pypa.Group(AT + IMPLEMENTATION + pypa.Word(pypa.alphanums) + 
+                            HYPHEN + LPAREN + ID + RPAREN + INIT + LBRACE + \
+                            IF + LPAREN + LPAREN + SELF + EQUAL + LBRACKET + SUPER + initparams + \
+                            pypa.ZeroOrMore(landau) + RBRACKET + RPAREN + RPAREN + LBRACE + \
+                            phaseform + \
+                            phasename + \
+                            RBRACE + \
+                            RETURN + SELF + SEMI + \
+                            RBRACE + \
+                            AT + END)
+
+    doc        = pypa.Group(pypa.SkipTo(implemen).suppress() + pypa.ZeroOrMore(implemen))
+    doc.ignore(pypa.cppStyleComment)
+
+    result = doc.parseFile(filename)
+
+    resultlist = result.asList()
+
+    plabels  = ['a0', 'n', 'v0', 'k00', 'k0p', 'theta0', 'gamma0', 'q', 'refS']
+    pfactors = [1.e3,   1,  0.1,  1.e4,    1.,       1.,       1.,  1.,     1.]
+    llabels  = ['TC0', 'VD', 'SD']
+    lfactors = [   1.,   1.,   1.]
+
+    emdf = pd.DataFrame(columns=['name','formula']+plabels+['T_r', 'V_r']+llabels)
+    for entry in resultlist[0]:
+        classname = entry[0]
+        params = entry[1]
+        ni = 2
+        lparamdict = OrderedDict([(l,None) for l in llabels])
+        if isinstance(entry[2], list):
+            lparams = entry[2]
+            lparamdict.update(OrderedDict([(llabels[i],lfactors[i]*v) for i, v in enumerate(lparams)]))
+            ni = 3
+        name = entry[ni+1].replace('-','')
+        name = emnames.get(name, name)
+
+        formula = entry[ni]
+        formula_split = re.findall('[A-Z][^A-Z]*', formula)
+        new_formula = ''
+        for elem in formula_split:
+            n_elem = '1'
+            new_elem = elem
+            n_elem_l = re.findall('\d+$', elem)
+            if len(n_elem_l) > 0:
+                n_elem = n_elem_l[-1]
+                new_elem = elem[:-len(n_elem)]
+            new_formula += new_elem +'('+ n_elem +')'
+        
+        paramdict = OrderedDict([('name',name),('formula',new_formula)])
+        paramdict.update(([(plabels[i],pfactors[i]*v) for i,v in enumerate(params)]))
+        paramdict.update([('T_r',300.0),('V_r',paramdict['v0'])])
+        paramdict.update(lparamdict)
+        emdf = emdf.append(paramdict,ignore_index=True)
+
+    return emdf
+
+def parse_phases(srcdir):
+    filename = os.path.join(srcdir, "StixrudeSolutions.m")
+
+    RAISE = map(pypa.Suppress,"^")
+
+    ALLOC           = pypa.Keyword("alloc").suppress()
+    DOUBLE          = pypa.Keyword("double").suppress()
+    STRINGWITHFORMAT = pypa.Keyword("stringWithFormat").suppress()
+
+    # define extra structure expressions
+    endmembername = LBRACKET + LBRACKET + pypa.Word(pypa.alphanums) + ALLOC + RBRACKET + INIT + RBRACKET + COMMA
+    endmemberlist = pypa.Group(LBRACKET + NSARRAY + ARRAY + COLON + pypa.OneOrMore(endmembername) + NIL + RBRACKET)
+    nestednsnumber = pypa.Group(LBRACKET + NSARRAY + ARRAY + COLON + nsnumber + \
+                                              nsarray + COMMA + NIL + RBRACKET + COMMA)
+    nestednsarray = pypa.Group(LBRACKET + NSARRAY + ARRAY + COLON + \
+                               pypa.OneOrMore(nestednsnumber) + \
+                               NIL + RBRACKET \
+                              )
+    convertor = pypa.Group(pypa.Suppress("Convertor") + pypa.SkipTo(LBRACE).suppress() + LBRACE \
+                                                        + pypa.OneOrMore(pypa.Group(pypa.Suppress('m') + LBRACKET + number + RBRACKET + EQUAL + pypa.SkipTo(SEMI) + SEMI)) \
+                                                        + RBRACE + SEMI)
+    display = pypa.Group(pypa.Suppress("Display") + pypa.SkipTo(STRINGWITHFORMAT).suppress() \
+                                        + STRINGWITHFORMAT + COLON + AT + string + pypa.ZeroOrMore(COMMA + pypa.Word(pypa.alphanums+'+-/* ')) + RBRACKET + SEMI)
+    ifself = pypa.Group(IF + LPAREN + LPAREN + SELF + EQUAL + LBRACKET + SUPER + pypa.Suppress('initWithPhaseName') + COLON + AT + string \
+                           + pypa.Suppress('withSpecies') + COLON + endmemberlist \
+                           + pypa.Suppress('withSpeciesWeights') + COLON + nsarray \
+                           + pypa.Suppress('withSpeciesXfactor') + COLON + nsarray \
+                           + pypa.Suppress('withWarray') + COLON + nsarray \
+                           + pypa.Suppress('withSites') + COLON + nestednsarray \
+                           + pypa.Suppress('WithNAtoms') + COLON + number \
+                           + pypa.SkipTo(RBRACKET + RPAREN + RPAREN).suppress()
+                         )
+
+    implemen   = pypa.Group(AT + IMPLEMENTATION + pypa.Word(pypa.alphanums) \
+                            + HYPHEN + LPAREN + ID + RPAREN + INIT + LBRACE \
+                            + convertor \
+                            + display \
+                            + pypa.SkipTo(ifself).suppress() \
+                            + ifself
+                            + pypa.SkipTo(pypa.Group(AT + END)).suppress() + AT + END \
+                           )
+
+    doc        = pypa.Group(pypa.SkipTo(implemen).suppress() + pypa.OneOrMore(implemen))
+    doc.ignore(pypa.cppStyleComment)
+
+    result = doc.parseFile(filename)
+
+    resultlist = result.asList()
+
+    plabels  = ['name', 'abbrev', 'endmember_names', 'formula_str', 'conversion_strs', 'X', 'd', 'W', 'sites']
+    llabels  = ['TC0', 'VD', 'SD']
+
+    phdf = pd.DataFrame(columns=plabels+llabels)
+    for entry in resultlist[0]:
+        classname = entry[0]
+        convertorl = entry[1]
+        displayl   = entry[2]
+        params = entry[3]
+        name = params[0].replace('-','')
+        name = phnames.get(name, name)
+        abbrev = phabbrev[name]
+        endmembers = [em[:-len('Stixrude')] for em in params[1]]
+        endmembers = [emnames.get(em,em) for em in endmembers]
+        d = params[2]
+        X = params[3]
+        W = params[4]
+        sites = params[5]
+        n = params[6]
+
+        # convert the display info into a formula_str  (this currently only requires info from the first entry of displayl)
+        formula_str  = ''.join([s.replace('%4.2f', '['+s[:-len('%4.2f')]+']') for s in re.findall('[A-Z][^A-Z]*',  displayl[0])])
+        
+        # convert the convertor into coder conversion strings
+        # step one, convert to dictionary from m[i] to strings of elements
+        mconvdict = {}
+        printm = False
+        for i,cstr in convertorl:
+            convdict = dict([('e['+j+']','['+elements[int(j)]+']') for j in re.findall('(?<=e\[)\d+(?=\])', cstr)])
+            for k,v in convdict.items(): cstr = cstr.replace(k,v)
+            mconvdict['m['+repr(i)+']'] = cstr
+        # step two, use the dictionary to eliminate ms from rhs of conversion strs (assumes only one level of dependency!)
+        conversion_strs = []
+        for m,cstr in mconvdict.items():
+            for k,v in mconvdict.items(): cstr = cstr.replace(k,'('+v+')')
+            conversion_strs.append(m[1:]+'='+cstr)
+
+        TC0s = []
+        VDs  = []
+        SDs  = []
+        for em in endmembers:
+            edf = emdf[emdf['name']==em].iloc[0]
+            TC0s.append(edf['TC0'])
+            VDs.append(edf['VD'])
+            SDs.append(edf['SD'])
+        if all([TC0 is None or np.isnan(TC0) for TC0 in TC0s]): TC0s = None
+        if all([VD is None or np.isnan(VD) for VD in VDs]): VDs = None
+        if all([SD is None or np.isnan(SD) for SD in SDs]): SDs = None
+        lparamdict = OrderedDict([('TC0',TC0s),('VD',VDs),('SD',SDs)])
+        
+        paramdict = OrderedDict()
+        paramdict['name'] = name
+        paramdict['abbrev'] = abbrev
+        paramdict['endmember_names'] = endmembers
+        paramdict['formula_str'] = formula_str
+        paramdict['conversion_strs'] = conversion_strs
+        paramdict['X'] = X
+        paramdict['d'] = d
+        paramdict['W'] = W
+        paramdict['sites'] = sites
+        paramdict.update(lparamdict)
+        phdf = phdf.append(paramdict,ignore_index=True)
+
+    return phdf
+  
+
+def pure_phases(phdf, emdf):
+    for i,row in emdf.iterrows():
+        name = row['name']
+        abbrev = phabbrev[name]
+        endmembers =  [name]
+        formula = row['formula'].replace('(','').replace(')','')
+        eles = re.findall('[A-Z][a-z]*(?=\d+)', formula)
+        elen = re.findall('\d+', formula)
+        # here we assume that the first element in the formula can be taken as the conversion string
+        # this should be safe as pure phases will always just return the endmembers formula
+        elen0   = elen[0]
+        elen[0] = '['+eles[0]+']'
+        new_formula = ''.join([eles[j]+elen[j] if j==0 or int(elen[j])>1 else eles[j] for j in range(len(eles))])
+        conversion_strs = ['[0]=['+eles[0]+']/'+'{:.1f}'.format(float(elen0))] if int(elen0) > 1 else ['[0]=['+eles[0]+']']
+
+        phases = [(j,phrow['name'],phrow['endmember_names'].index(name)) \
+                  for j,phrow in phdf.iterrows() if name in phrow['endmember_names']]
+        if(len(phases)>0):
+            X = []
+            d = []
+            for iph, phname, iem in phases:
+                X.append(phdf.iloc[iph]['X'][iem])
+                d.append(phdf.iloc[iph]['d'][iem])
+        else:
+            X = [1.0]
+            d = [1.0]
+        assert(X.count(X[0])==len(X))
+        assert(d.count(d[0])==len(d))
+        X = [X[0]]
+        d = [d[0]]
+        
+        W = []
+        sites = []
+        
+        paramdict = OrderedDict()
+        paramdict['name'] = name
+        paramdict['abbrev'] = abbrev
+        paramdict['endmember_names'] = endmembers
+        paramdict['formula_str'] = new_formula
+        paramdict['conversion_strs'] = conversion_strs
+        paramdict['X'] = X
+        paramdict['d'] = d
+        paramdict['W'] = W
+        paramdict['sites'] = sites
+        paramdict['TC0'] = None if row['TC0'] is None or np.isnan(row['TC0']) else [row['TC0']] 
+        paramdict['VD']  = None if row['VD'] is None or np.isnan(row['VD']) else [row['VD']] 
+        paramdict['SD']  = None if row['SD'] is None or np.isnan(row['SD']) else [row['SD']] 
+        phdf = phdf.append(paramdict,ignore_index=True)
+        
+    return phdf
+
+if __name__ == "__main__":
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser( \
+                           description="""Given the source directory for ThermoEngine, this script parses the Stixrude*.m files
+                                          to generate csv files of the thermodynamic SLB database.""")
+    parser.add_argument('srcdir', action='store', metavar='srcdir', type=str,
+                        help='ThermoEngine source directory path.')
+    parser.add_argument('-o', '--outdir', action='store', metavar='outdir', 
+                        default=os.path.join(os.path.dirname(__file__), os.path.pardir, 'database', 'data'), type=str, required=False,
+                        help='Output directory for csv files (defaults to ../data relative to script).')
+    args = parser.parse_args()
+
+    emdf = parse_endmembers(args.srcdir)
+    phdf = parse_phases(args.srcdir)
+    phdf = pure_phases(phdf, emdf)
+
+    try:
+        os.mkdir(args.outdir)
+    except:
+        pass
+
+    outname = os.path.join(args.outdir, "slb_endmembers.csv")
+    emdf.to_csv(outname, index=False)
+
+    outname = os.path.join(args.outdir, "slb_phases.csv")
+    phdf.to_csv(outname, index=False)
+

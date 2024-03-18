@@ -1,0 +1,430 @@
+#!/usr/bin/env python3
+
+import os,sys
+import pandas as pd
+import ast
+import numpy as np
+from collections import OrderedDict
+from thermocodegen.coder import coder
+from string import Template
+
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python'))
+from tcg_slb.phase import SLBPhase
+
+# Endmember dataframe
+emdf = pd.read_csv(os.path.join(os.path.dirname(__file__), os.path.pardir, 'database', 'data', 'slb_endmembers.csv'), skipinitialspace=True)
+
+# Phase dataframe
+def literal_return(val):
+    try:
+        return ast.literal_eval(val)
+    except (ValueError, SyntaxError) as e:
+        return None
+converter = dict([(h,literal_return) for h in ['endmember_names','conversion_strs','X','d','W','sites','TC0','VD','SD']])
+phdf = pd.read_csv(os.path.join(os.path.dirname(__file__), os.path.pardir, 'database', 'data', 'slb_phases.csv'),skipinitialspace=True,converters=converter)
+
+# d and X dataframe
+dXdf = pd.DataFrame(columns=['name', 'd'])
+for i,row in emdf.iterrows():
+    name = row['name']
+    phases = [(j,phrow['name'],phrow['endmember_names'].index(name)) \
+              for j,phrow in phdf.iterrows() if name in phrow['endmember_names']]
+    if(len(phases)>0):
+        X = []
+        d = []
+        for iph, phname, iem in phases:
+            X.append(phdf.iloc[iph]['X'][iem])
+            d.append(phdf.iloc[iph]['d'][iem])
+    else:
+        X = [1.0]
+        d = [1.0]
+    assert(X.count(X[0])==len(X))
+    assert(d.count(d[0])==len(d))
+    X = X[0]
+    d = d[0]
+    paramdict = OrderedDict()
+    paramdict['name'] = [name]
+    paramdict['X'] = [X]
+    paramdict['d'] = [d]
+    dXdf = pd.concat([dXdf, pd.DataFrame.from_dict(paramdict)], ignore_index=True)
+
+# w12 dataframe
+w12df = pd.DataFrame(columns=['phase_name', 'phase_abbrev', 'endmember_set', 'W_12'])
+for i, row in phdf.iterrows():
+    name = row['name']
+    abbrev = row['abbrev']
+    ems = row['endmember_names']
+    Wlist = row['W']
+    k = 0
+    for ei in range(0,len(ems)-1):
+        for ej in range(ei+1,len(ems)):
+            em1 = ems[ei]
+            em2 = ems[ej]
+            W12 = Wlist[k]
+            k = k+1
+            paramdict = OrderedDict()
+            paramdict['phase_name'] = [name]
+            paramdict['phase_abbrev'] = [abbrev]
+            paramdict['endmember_set'] = [set([em1,em2])]
+            paramdict['W_12'] = [W12]
+            w12df = pd.concat([w12df, pd.DataFrame.from_dict(paramdict)], ignore_index=True)
+
+reference = 'generate_additional_phases' 
+
+# Create all additional phases
+def generate_additional_phases(outdir):
+  """Create all additional phases."""
+  phases = []
+
+  # ['Mg(1)Si(1)O(3)', 'Fe(1)Si(1)O(3)']
+  phase = generate_additional_phase(outdir, "MgFePerovskite", "mgfepv", \
+                            ["MgPerovskite", "FePerovskite"], \
+                            "Mg[Mg]Fe[Fe]SiO3", ["[0]=[Mg]", "[1]=[Fe]"], \
+                            [[1, [1, 0]], # Mg on dodecahedral site
+                             [1, [0, 1]]] # Fe on dodecahedral site
+                           )
+  phases.append(phase)
+
+  # ['Mg(1)Si(1)O(3)', 'Fe(1)Si(1)O(3)']
+  phase = generate_additional_phase(outdir, "MgFePostPerovskite", "mgfeppv", \
+                            ["MgPostPerovskite", "FePostPerovskite"], \
+                            "Mg[Mg]Fe[Fe]SiO3", ["[0]=[Mg]", "[1]=[Fe]"], \
+                            [[1, [1, 0]], # Mg on dodecahedral site
+                             [1, [0, 1]]] # Fe on dodecahedral site
+                           )
+  phases.append(phase)
+
+  # ['Mg(1)Si(1)O(3)', 'Al Al O(3)']
+  phase = generate_additional_phase(outdir, "MgAlPerovskite", "mgalpv", \
+                            ["MgPerovskite", "AlPerovskite"], \
+                            "Mg[Mg]Al[Al]Si[Si]O3", ["[0]=[Mg]", "[1]=[Al]/2.0"], \
+                            [[1, [1, 0]], # Mg on dodecahedral site
+                             [1, [0, 1]], # Al on dodecahedral site
+                             [1, [0, 1]], # Al on octahedral site
+                             [1, [1, 0]]] # Si on octahedral site
+                           )
+  phases.append(phase)
+
+  # ['Enstatite', 'Ferrosilite', 'MgTschermaks', 'OrthoDiopside']
+  #
+  # [[1.0, [0.0, 0.0, 0.0, 1.0]], # Ca on M2
+  #  [1.0, [1.0, 0.0, 1.0, 0.0]], # Mg on M2
+  #  [1.0, [0.0, 1.0, 0.0, 0.0]], # Fe on M2
+  #  [1.0, [1.0, 0.0, 0.0, 1.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0, 0.0, 0.0]], # Fe on M1
+  #  [1.0, [0.0, 0.0, 1.0, 0.0]]] # Al on M1
+  #
+  # ['Enstatite',       'MgTschermaks']
+  #
+  # 3 site:
+  # ['Mg Mg Si(2)O(6)', 'Mg Al [SiAl] O(6)']
+  # [[1.0, [1.0, 0.0]], # Mg on 2nd
+  #  [1.0, [0.0, 1.0]], # Al on 2nd
+  #  [2.0, [1.0, 0.5]], # Si on 3rd
+  #  [2.0, [0.0, 0.5]]] # Al on 3rd
+  #
+  # Or:
+  # ['Mg Mg Si(2)O(6)', 'Mg Al [SiAl] O(6)']
+  #  [1.0, [1.0, 1.0]], # Mg on M2
+  #  [1.0, [1.0, 0.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0]], # Al on M1
+  #  [1.0, [1.0, 0.0]], # Si on other
+  #  [1.0, [0.0, 1.0]]] # Al on other
+  #
+  # 2 site:
+  # ['Mg Mg Si(2)O(6)', 'Mg Al [SiAl] O(6)']
+  #  [1.0, [1.0, 1.0]], # Mg on M2
+  #  [1.0, [1.0, 0.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0]]] # Al on M1
+  phase = generate_additional_phase(outdir, "MgAlOrthopyroxene", "mgalopx", \
+                            ["Enstatite", "MgTschermaks"], \
+                            "Mg[Mg]Al[Al]Si[Si]O6", ["[0]=([Mg]-[Al]/2.0)/2.0", "[1]=[Al]/2.0"], \
+                            #[[1, [1, 1]], # Mg on M2 site
+                            # [1, [1, 0]], # Mg on M1 site
+                            # [1, [0, 1]]] # Al on M1 site
+                            [[1.0, [1.0, 0.0]], # Mg on 2nd
+                             [1.0, [0.0, 1.0]], # Al on 2nd
+                             [2.0, [1.0, 0.5]], # Si on 3rd
+                             [2.0, [0.0, 0.5]]] # Al on 3rd
+                           )
+  phases.append(phase)
+
+  phase = generate_additional_phase(outdir, "MgAlOrthopyroxene2Site", "mgalopx2", \
+                            ["Enstatite", "MgTschermaks"], \
+                            "Mg[Mg]Al[Al]Si[Si]O6", ["[0]=([Mg]-[Al]/2.0)/2.0", "[1]=[Al]/2.0"], \
+                            [[1.0, [1.0, 0.0]], # Mg on M1
+                             [1.0, [0.0, 1.0]]] # Al on M1
+                           )
+  phases.append(phase)
+
+  phase = generate_additional_phase(outdir, "MgAlOrthopyroxene3Site", "mgalopx3", \
+                            ["Enstatite", "MgTschermaks"], \
+                            "Mg[Mg]Al[Al]Si[Si]O6", ["[0]=([Mg]-[Al]/2.0)/2.0", "[1]=[Al]/2.0"], \
+                            [[1.0, [1.0, 0.0]], # Mg on 2nd
+                             [1.0, [0.0, 1.0]], # Al on 2nd
+                             [2.0, [1.0, 0.5]], # Si on 3rd
+                             [2.0, [0.0, 0.5]]] # Al on 3rd
+                           )
+  phases.append(phase)
+
+  phase = generate_additional_phase(outdir, "MgAlOrthopyroxene3SiteB", "mgalopx3b", \
+                            ["Enstatite", "MgTschermaks"], \
+                            "Mg[Mg]Al[Al]Si[Si]O6", ["[0]=([Mg]-[Al]/2.0)/2.0", "[1]=[Al]/2.0"], \
+                            [[1.0, [1.0, 0.0]], # Mg on M1
+                             [1.0, [0.0, 1.0]], # Al on M1
+                             [1.0, [1.0, 0.0]], # Si on other
+                             [1.0, [0.0, 1.0]]] # Al on other
+                           )
+  phases.append(phase)
+
+
+  # ['Mg(1)Si(1)O(3)', 'Al Al O(3)']
+  phase = generate_additional_phase(outdir, "MgAlAkimotoite", "mgalak", \
+                            ["MgAkimotoite", "AlAkimotoite"], \
+                            "Mg[Mg]Al[Al]Si[Si]O3", ["[0]=[Mg]", "[1]=[Al]/2.0"], \
+                            [[1, [1, 0]], # Mg on dodecahedral site
+                             [1, [0, 1]], # Al on dodecahedral site
+                             [1, [0, 1]], # Al on octahedral site
+                             [1, [1, 0]]] # Si on octahedral site
+                           )
+  phases.append(phase)
+
+  # [[3.0, [0.0, 0.0, 1.0, 0.0, 0.0]],         # Ca on do
+  #  [3.0, [1.0, 0.0, 0.0, 1.0, 0.0]],         # Mg on do
+  #  [3.0, [0.0, 1.0, 0.0, 0.0, 0.0]],         # Fe on do
+  #  [3.0, [0.0, 0.0, 0.0, 0.0, 0.666666666]], # Na on do
+  #  [3.0, [0.0, 0.0, 0.0, 0.0, 0.333333333]], # Al on do
+  #  [1.0, [0.0, 0.0, 0.0, 1.0, 0.0]],         # Mg on oct 1
+  #  [1.0, [1.0, 1.0, 1.0, 0.0, 1.0]],         # Al on oct 1
+  #  [1.0, [0.0, 0.0, 0.0, 1.0, 1.0]],         # Si on oct 2
+  #  [1.0, [1.0, 1.0, 1.0, 0.0, 0.0]]]         # Al on oct 2
+  #
+  # ['Mg(3)Al(2)Si(3)O(12)', 'Fe(3)Al(2)Si(3)O(12)', 'Ca(3)Al(2)Si(3)O(12)', 'Mg(4)Si(4)O(12)', 'Na(2)Al(2)Si(4)O(12)']
+  #
+  #['Pyrope',                 'MgMajorite'     ]
+
+  ## 3 site model
+  #['Mg(3) Mg Si Si(3) O(12)', 'Mg(3) Al Al Si(3)O(12)']
+
+  #[3.0, [1.0, 1.0]]  # Mg on do
+  #[1.0, [1.0, 0.0]]  # Mg on oct 1
+  #[1.0, [0.0, 1.0]]  # Al on oct 1
+  #[1.0, [1.0, 0.0]]  # Si on oct 2
+  #[1.0, [0.0, 1.0]]  # Al on oct 2
+
+  ## 2 site model
+  #['Mg(3) Al(2) Si(3)O(12)', 'Mg(3) [MgSi] Si(3) O(12)']
+
+  #[3.0, [1.0, 1.0]]
+  #[2.0, [1.0, 0.0]]
+  #[2.0, [0.0, 0.5]]
+  #[2.0, [0.0, 0.5]]
+  phase = generate_additional_phase(outdir, "MgAlGarnet", "mgalgt", \
+                            ["MgMajorite", "Pyrope"], \
+                            "Mg[Mg]Al[Al]Si[Si]O12", ["[0]=[Al]/2.0", "[1]=([Mg] - 3.0*[Al]/2.0)/4.0"], \
+                            [[1.0, [1.0, 0.0]],  # Mg on oct 1
+                             [1.0, [0.0, 1.0]],  # Al on oct 1
+                             [1.0, [1.0, 0.0]],  # Si on oct 2
+                             [1.0, [0.0, 1.0]]]  # Al on oct 2
+                           )
+  phases.append(phase)
+
+  # [[1.0, [0.0, 0.0, 0.0, 1.0]], # Ca on M2
+  #  [1.0, [1.0, 0.0, 1.0, 0.0]], # Mg on M2
+  #  [1.0, [0.0, 1.0, 0.0, 0.0]], # Fe on M2
+  #  [1.0, [1.0, 0.0, 0.0, 1.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0, 0.0, 0.0]], # Fe on M1
+  #  [1.0, [0.0, 0.0, 1.0, 0.0]]] # Al on M1
+  #
+  # ['Enstatite', 'Ferrosilite', 'MgTschermaks', 'OrthoDiopside']
+  # ['Mg(2)Si(2)O(6)',  'Fe(2)Si(2)O(6)',  'Mg(1)Al(2)Si(1)O(6)',  'Ca(1)Mg(1)Si(2)O(6)']
+  #
+  # ['Enstatite',           'MgTschermaks',        'OrthoDiopside']
+  # ['Mg(1)Mg(1)Si(2)O(6)', 'Mg(1)Al(1)[Al(1)Si(1)]O(6)', 'Ca(1)Mg(1)Si(2)O(6)']
+  #
+  # 2site (TE):
+  # [[1.0, [0.0, 0.0, 1.0]], # Ca on M2
+  #  [1.0, [1.0, 1.0, 0.0]], # Mg on M2
+  #  [1.0, [1.0, 0.0, 1.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0, 0.0]]] # Al on M1
+  #
+  # 3siteB ?
+  # [[1.0, [0.0, 0.0, 1.0]], # Ca on M2
+  #  [1.0, [1.0, 1.0, 0.0]], # Mg on M2
+  #  [1.0, [1.0, 0.0, 1.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0, 0.0]], # Al on M1
+  #  [1.0, [1.0, 1.0, 0.0]], # Si on last
+  #  [1.0, [0.0, 0.0, 1.0]]] # Al on last
+  # 3site ?
+  # [[1.0, [0.0, 0.0, 1.0]], # Ca on M2
+  #  [1.0, [1.0, 1.0, 0.0]], # Mg on M2
+  #  [1.0, [1.0, 0.0, 1.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0, 0.0]], # Al on M1
+  #  [2.0, [1.0, 1.0, 0.5]], # Si on last
+  #  [2.0, [0.0, 0.0, 0.5]]] # Al on last
+  phase = generate_additional_phase(outdir, "MgAlCaOrthopyroxene2Site", "mgcaopx2", \
+                            ["Enstatite", "MgTschermaks", "OrthoDiopside"], \
+                            "Mg[Mg]Al[Al]Ca[Ca]Si[Si]O6", ["[0]=([Mg]-[Ca]-[Al]/2.0)/2.0", "[1]=[Al]/2.0", "[2]=[Ca]"], \
+                            [[1.0, [0.0, 0.0, 1.0]], # Ca on M2
+                             [1.0, [1.0, 1.0, 0.0]], # Mg on M2
+                             [1.0, [1.0, 0.0, 1.0]], # Mg on M1
+                             [1.0, [0.0, 1.0, 0.0]]] # Al on M1
+                           )
+  phases.append(phase)
+
+  phase = generate_additional_phase(outdir, "MgAlCaOrthopyroxene3Site", "mgcaopx3", \
+                            ["Enstatite", "MgTschermaks", "OrthoDiopside"], \
+                            "Mg[Mg]Al[Al]Ca[Ca]Si[Si]O6", ["[0]=([Mg]-[Ca]-[Al]/2.0)/2.0", "[1]=[Al]/2.0", "[2]=[Ca]"], \
+                            [[1.0, [0.0, 0.0, 1.0]], # Ca on M2
+                             [1.0, [1.0, 1.0, 0.0]], # Mg on M2
+                             [1.0, [1.0, 0.0, 1.0]], # Mg on M1
+                             [1.0, [0.0, 1.0, 0.0]], # Al on M1
+                             [2.0, [1.0, 1.0, 0.5]], # Si on last
+                             [2.0, [0.0, 0.0, 0.5]]] # Al on last
+                           )
+  phases.append(phase)
+
+  phase = generate_additional_phase(outdir, "MgAlCaOrthopyroxene3SiteB", "mgcaopx3b", \
+                            ["Enstatite", "MgTschermaks", "OrthoDiopside"], \
+                            "Mg[Mg]Al[Al]Ca[Ca]Si[Si]O6", ["[0]=([Mg]-[Ca]-[Al]/2.0)/2.0", "[1]=[Al]/2.0", "[2]=[Ca]"], \
+                            [[1.0, [0.0, 0.0, 1.0]], # Ca on M2
+                             [1.0, [1.0, 1.0, 0.0]], # Mg on M2
+                             [1.0, [1.0, 0.0, 1.0]], # Mg on M1
+                             [1.0, [0.0, 1.0, 0.0]], # Al on M1
+                             [1.0, [1.0, 1.0, 0.0]], # Si on last
+                             [1.0, [0.0, 0.0, 1.0]]] # Al on last
+                           )
+  phases.append(phase)
+
+  # [[1.0, [1.0, 1.0, 0.0, 1.0, 0.0]], # Ca on M2
+  #  [1.0, [0.0, 0.0, 1.0, 0.0, 0.0]], # Mg on M2
+  #  [1.0, [0.0, 0.0, 0.0, 0.0, 1.0]], # Na on M2
+  #  [1.0, [1.0, 0.0, 1.0, 0.0, 0.0]], # Mg on M1
+  #  [1.0, [0.0, 1.0, 0.0, 0.0, 0.0]], # Fe on M1
+  #  [1.0, [0.0, 0.0, 0.0, 1.0, 1.0]], # Al on M1
+  #  [2.0, [0.0, 0.0, 0.0, 0.5, 0.0]], # Al on tet
+  #  [2.0, [1.0, 1.0, 1.0, 0.5, 1.0]]] # Si on tet
+  #
+  # ['Diopside', 'Hedenbergite', 'Clinoenstatite', 'CaTschermaks', 'Jadeite']
+  # ['Ca(1)Mg(1)Si(2)O(6)', 'Ca(1)Fe(1)Si(2)O(6)',  'Mg(2)Si(2)O(6)',  'Ca(1)Al(2)Si(1)O(6)',  'Na(1)Al(1)Si(2)O(6)']
+  #
+  # ['Clinoenstatite'  , 'Jadeite',             'Diopside',            'CaTschermaks']
+  # ['Mg Mg Si(2) O(6)', 'Na(1)Al(1)Si(2)O(6)', 'Ca(1)Mg(1)Si(2)O(6)', 'Ca(1)Al(1)[Al(1)Si(1)]O(6)']
+  phase = generate_additional_phase(outdir, "MgNaAlCaClinopyroxene", "mgcacpx", \
+                            ["Clinoenstatite", "Jadeite", "Diopside", "CaTschermaks"], \
+                            "Mg[Mg]Ca[Ca]Si2O6", \
+                            ['[0]=([Mg] - ([Ca] - ([Al]-[Na])/2.0))/2.0', '[1]=[Na]', '[2]=[Ca] - ([Al]-[Na])/2.0', '[3]=([Al]-[Na])/2.0'], \
+                            [[1.0, [0.0, 0.0, 1.0, 1.0]], # Ca on M2
+                             [1.0, [1.0, 0.0, 0.0, 0.0]], # Mg on M2
+                             [1.0, [0.0, 1.0, 0.0, 0.0]], # Na on M2
+                             [1.0, [1.0, 0.0, 1.0, 0.0]], # Mg on M1
+                             [1.0, [0.0, 1.0, 0.0, 1.0]], # Al on M1
+                             [2.0, [0.0, 0.0, 0.0, 0.5]], # Al on tet
+                             [2.0, [1.0, 1.0, 1.0, 0.5]]] # Si on tet
+                           )
+  phases.append(phase)
+  
+  ## [[3.0, [0.0, 0.0, 1.0, 0.0, 0.0]],         # Ca on do
+  ##  [3.0, [1.0, 0.0, 0.0, 1.0, 0.0]],         # Mg on do
+  ##  [3.0, [0.0, 1.0, 0.0, 0.0, 0.0]],         # Fe on do
+  ##  [3.0, [0.0, 0.0, 0.0, 0.0, 0.666666666]], # Na on do
+  ##  [3.0, [0.0, 0.0, 0.0, 0.0, 0.333333333]], # Al on do
+  ##  [1.0, [0.0, 0.0, 0.0, 1.0, 0.0]],         # Mg on oct 1
+  ##  [1.0, [1.0, 1.0, 1.0, 0.0, 1.0]],         # Al on oct 1
+  ##  [1.0, [0.0, 0.0, 0.0, 1.0, 1.0]],         # Si on oct 2
+  ##  [1.0, [1.0, 1.0, 1.0, 0.0, 0.0]]]         # Al on oct 2
+  ##
+  ## ['Pyrope', 'Almandine', 'Grossular', 'MgMajorite', 'NaMajorite']
+  ## ['Mg(3)Al(2)Si(3)O(12)', 'Fe(3)Al(2)Si(3)O(12)', 'Ca(3)Al(2)Si(3)O(12)', 'Mg(4)Si(4)O(12)', 'Na(2)Al(2)Si(4)O(12)']
+  ##
+  ## ['Pyrope',               'Almandine',            'Grossular',            'MgMajorite',      'NaMajorite']
+  ## ['Mg(3)Al(2)Si(3)O(12)', 'Fe(3)Al(2)Si(3)O(12)', 'Ca(3)Al(2)Si(3)O(12)', 'Mg(4)Si(4)O(12)', 'Na(2)Al(2)Si(4)O(12)']
+  ##
+  #phase = generate_additional_phase(outdir, "MgCaGarnet", "mgcagt", \
+  #                          ["Pyrope", "MgMajorite"], \
+  #                          "Mg[Mg]Al[Al]Si[Si]O12", ["[0]=[Al]/2.0", "[1]=([Mg] - 3.0*[Al]/2.0)/4.0"], \
+  #                          [[1.0, [0.0, 1.0]],  # Mg on oct 1
+  #                           [1.0, [1.0, 0.0]],  # Al on oct 1
+  #                           [1.0, [0.0, 1.0]],  # Si on oct 2
+  #                           [1.0, [1.0, 0.0]]]  # Al on oct 2
+  #                         )
+  #phases.append(phase)
+
+  return phases
+
+# Create a single additional phase
+def generate_additional_phase(outdir, name, abbrev, endmember_names, \
+                              formula_str, conversion_strs, sites):
+  """Generate a single additional phase given an output directory, a phase name, abbreviation, list of 
+     endmembers, formula, list of conversion strings, nested list of sites."""
+  try:
+      os.mkdir(outdir)
+  except FileExistsError:
+      pass
+
+  W = []
+  for ei in range(0, len(endmember_names)-1):
+    for ej in range(ei+1, len(endmember_names)):
+      em1 = endmember_names[ei]
+      em2 = endmember_names[ej]
+      w12 = 0.0
+      w12row = w12df[w12df['endmember_set']==set([em1, em2])]
+      if w12row.shape[0] > 0:
+        assert(w12row.shape[0]==1)
+        w12 = w12row.iloc[0]['W_12']
+      W.append(w12)
+
+  X = []
+  d = []
+  for em in endmember_names:
+    dXrow = dXdf[dXdf['name']==em]
+    X.append(dXrow.iloc[0]['X'])
+    d.append(dXrow.iloc[0]['d'])
+
+  TC0 = []
+  VD  = []
+  SD  = []
+  for em in endmember_names:
+    emrow = emdf[emdf['name']==em]
+    TC0.append(emrow.iloc[0]['TC0'])
+    VD.append(emrow.iloc[0]['VD'])
+    SD.append(emrow.iloc[0]['SD'])
+  if np.isnan(np.sum(TC0)) or any([TC is None for TC in TC0]):
+    TC0 = None
+    VD  = None
+    SD  = None
+
+  name = name.replace('-','_')
+  if not name.endswith('_slb_ph'): name = name+'_slb_ph'
+  ph_endmember_names = [em+'_slb_em' for em in endmember_names]
+  phase = SLBPhase(name, abbrev, reference, ph_endmember_names, \
+                   formula_str, conversion_strs, d=d, W=W, sites=sites, \
+                   TC0=TC0, VD=VD, SD=SD)
+  print(phase.tofile(outdir))
+
+  return phase
+
+if __name__ == "__main__":
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser( \
+                           description="""Generate phmls for SLB thermodynamic database.""")
+    parser.add_argument('-o', '--outdir', action='store', metavar='outdir', 
+                        default=os.path.join(os.path.dirname(__file__), os.path.pardir, 'database', 'phases'), type=str, required=False,
+                        help='Output directory for phml files (defaults to ../database/phases relative to script).')
+    args = parser.parse_args()
+
+    phases = generate_additional_phases(args.outdir)
+    names = [phase.name for phase in phases]
+    abbrevs = [phase.abbrev for phase in phases]
+
+    tempstr = open(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python', 'tcg_slb', 'info', 'additional_phases.py.in'), 'r').read()
+    subsstr = Template(tempstr).substitute(additional_phase_names=',{}'.format(os.linesep,).join(["'{}'".format(name,) for name in names]),
+                                           additional_phase_abbrevs=',{}'.format(os.linesep,).join(["'{}'".format(abbrev,) for abbrev in abbrevs]))
+    file = open(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python', 'tcg_slb', 'info', 'additional_phases.py'), 'w')
+    file.write(subsstr)
+    file.close()
+
+
+
