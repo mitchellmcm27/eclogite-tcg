@@ -1,20 +1,11 @@
 ## Clone the repo
 
 ```bash
-git clone https://github.com/mitchellmcm27/tcg-ec.git
-cd tcg-ec
+git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git
+cd eclogite-tcg
 ```
 
-We also need to pull in the "TCG_SLB" code, which provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases through TCG.
-One way to do this is to simply clone it in. 
-From inside the **tcg-ec** directory, run the following.
-This will create a **tcg_slb** subdirectory containing the required code.
-
-```bash
-git clone https://gitlab.com/cianwilson/tcg_slb.git --depth 1
-```
-
-NOTE: I will probably need to update this part of the instructions before releasing the code.
+This will also pull in the "TCG_SLB" code, which provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases through TCG, as a git subtree.
 
 ## Start a Docker container
 
