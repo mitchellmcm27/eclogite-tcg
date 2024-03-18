@@ -10,13 +10,13 @@ This will also pull in the "TCG_SLB" code, which provides convenient Python clas
 ## Start a Docker container
 
 Build an image using the provided Dockerfile, using `-t` to give the image a human-readable tag.
-Start an interactive container, binding the local **tcg-ec** directory to **workspaces/tcg-ec** inside the container.
+Start an interactive container, binding the local **eclogite-tcg** directory to **workspaces/eclogite-tcg** inside the container.
 
 ```bash
-docker build -t tcg-ec .
-docker run -it --rm -v $PWD:/workspaces/tcg-ec tcg-ec
+docker build -t eclogite-tcg .
+docker run -it --rm -v $PWD:/workspaces/eclogite-tcg eclogite-tcg
 ```
-Alternatively, open the **tcg-ec** directory in VSCode and use the Dev Containers extension to automatically build and re-open the repository inside a Docker container.
+Alternatively, open the **eclogite-tcg** directory in VSCode and use the Dev Containers extension to automatically build and re-open the repository inside a Docker container.
 
 ## Thermodynamic database and reactions
 
