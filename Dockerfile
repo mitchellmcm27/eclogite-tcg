@@ -8,7 +8,6 @@ RUN julia -e 'using Pkg; Pkg.add(["StatGeochem","Plots","JSON"]);'
 
 RUN pip install --upgrade matplotlib julia
 
-
 # Install Perple_X
 # The Perple_X Julia interface requires all files to be in a specific directory
 RUN mkdir ~/resources
@@ -27,11 +26,8 @@ RUN cd ~/resources/perplex-stable\
 #RUN apt-get install -y r-base
 #RUN R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp', 'latex2exp'))"
 
-# TCG_SLB
-#RUN git subtree add --prefix tcg_slb https://gitlab.com/mitchellmcm27/tcg_slb.git eclogite --squash
-
-# Build the reactions
-# ...
-
-ENV DISPLAY=host.docker.internal:0
-EXPOSE 8888:8888
+# Build eclogite reactions
+RUN cd tcg_slb\
+    && rm --rf database/reactions\
+    && scripts/generate_reactions_eclogite -v 21\
+    && scripts/build_reactions
