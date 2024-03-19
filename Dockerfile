@@ -27,17 +27,25 @@ RUN cd ~/resources/perplex-stable\
 #RUN apt-get install -y r-base
 #RUN R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp', 'latex2exp'))"
 
-# Clone eclogitization repo
-RUN cd shared && git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git
-RUN chmod +x shared/eclogite-tcg/tcg_slb/scripts/generate_reactions_eclogite
-RUN chmod +x shared/eclogite-tcg/tcg_slb/scripts/build_reactions
+# Prepare working directory
+ENV EC_DIR /home/tcg/shared/eclogite-tcg
+RUN mkdir $EC_DIR
+WORKDIR $EC_DIR
+
+# copy only what is necessary to build reactions
+# (better cache performance)
+COPY tcg_slb tcg_slb
+RUN chmod +x tcg_slb/scripts/generate_reactions_eclogite
+RUN chmod +x tcg_slb/scripts/build_reactions
 
 # Build eclogite reactions
-RUN cd shared/eclogite-tcg/tcg_slb\
-    && rm -rf database/reactions/*.rxml\
+RUN cd tcg_slb\
     && scripts/generate_reactions_eclogite -v 21\
-    && scripts/build_reactions
+    && scripts/build_reactions database/reactions/eclogitization_2024_stx21_rx.rxml
 
-RUN chgrp adm -R shared/eclogite-tcg && chmod g+w -R shared/eclogite-tcg
+# copy everything else
+COPY . .
+RUN chgrp adm -R . \
+    && chmod g+w+x -R .
 
-WORKDIR /home/tcg/shared/eclogite-tcg
+WORKDIR $EC_DIR
