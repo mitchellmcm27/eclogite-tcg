@@ -21,7 +21,7 @@ rxn_name = 'eclogitization_2024_stx21_rx'
 # end time of reactions, change with -e argument
 end_t = 1
 # reaction's characteristic temperature (T_r)
-Tr = 3000.+273.15 
+Tr = 5500.+273.15 
 
 # only phases greater than this fraction will be plotted
 phasetol = 1.e-3 # 1.e-2
@@ -35,7 +35,7 @@ rtol = 1.e-5 # relative tolerance, default 1e-5
 atol = 1.e-9 # absolute tolerance, default 1e-9
 
 # large number
-max_steps = 3e5 # 4e3 is reasonable
+max_steps = 4e3 # 4e3 is reasonable
 
 # number of processes, edit with -n argument
 processes = mp.cpu_count()

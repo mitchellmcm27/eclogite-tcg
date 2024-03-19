@@ -43,7 +43,7 @@ end_t = 1
 # limit the maximum number of steps taken by the solver
 # defaults to infinity, which can exhaust memory if solver doesn't converge
 # a default of 4e3 seems to work well
-max_steps = 6e3
+max_steps = 4e3
 
 # regularization parameter for compositions
 # sets the minimum value for cik
