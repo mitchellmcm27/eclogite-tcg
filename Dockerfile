@@ -37,3 +37,7 @@ RUN cd shared/eclogite-tcg/tcg_slb\
     && rm -rf database/reactions/*.rxml\
     && scripts/generate_reactions_eclogite -v 21\
     && scripts/build_reactions
+
+RUN chgrp adm -R shared/eclogite-tcg && chmod g+w -R shared/eclogite-tcg
+
+WORKDIR /home/tcg/shared/eclogite-tcg
