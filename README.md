@@ -17,6 +17,18 @@ The Docker container also automatically includes several useful dependencies suc
 - Julia, and
 - the equilibrium thermodynamics software [Perple_X](https://github.com/jadconnolly/Perple_X) (v7.0.10).
 
+As a test, run the following command within the container:
+
+```bash
+cd models && python3 parallel_profile.py
+```
+
+The full suite of models can also be run using
+
+```bash
+python3 parallel_experiment2.py -q
+```
+
 ## Thermodynamic database
 
 ThermoCodegen was used to generate a custom thermodynamic database using the data from Stixrude and Lithgow-Bertelloni (2021).
