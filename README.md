@@ -1,3 +1,8 @@
+This is the code associated with "Reactive thermodynamics of crustal eclogitization and foundering" by McMillan, M., Sim, S.J., and and Wilson, C.R.
+
+Cite the paper: TBD
+
+Cite the code:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10835976.svg)](https://doi.org/10.5281/zenodo.10835976)
 
 ## Installation
@@ -23,7 +28,7 @@ As a test, run the following command within the container:
 cd models && python3 parallel_profile.py
 ```
 
-The full suite of models can also be run using
+The can be replicated by running the following command and inspecting the outputs:
 
 ```bash
 python3 parallel_experiment2.py -q
