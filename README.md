@@ -11,11 +11,18 @@ docker run -it --rm -v $PWD:/home/tcg/shared/eclogite-tcg registry.gitlab.com/mi
 The main benefit of using this Docker image is that it includes prebuilt binaries for the thermodynamic database (endmembers and phases) and reaction objects.
 Building these from scratch takes several hours.
 
-The Docker container also automatically includes several useful dependencies.
-The Docker container includes an installation of ThermoCodegen (TCG), which is required for running the models.
-The present repository is automatically cloned into the Docker image at **~/shared/eclogite-tcg/**, along with the *TCG_SLB* codes.
-*TCG_SLB* provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases through TCG.
-Compatible installations of Python (including numpy, matplotlib, and scipy), Julia, and the equilibrium thermodynamics software Perple_X are also included.
+The Docker container also automatically includes several useful dependencies such as
+- an installation of ThermoCodegen (TCG), which is required for running the models,
+- the present repository at **/home/tfuser/shared/eclogite-tcg/**,
+- *TCG_SLB*, which provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases,
+- Python (including numpy, matplotlib, and scipy),
+- Julia, and
+- the equilibrium thermodynamics software Perple_X.
+
+Within the Docker container, change to the following directory
+```bash
+cd shared/eclogite-tcg
+```
 
 ## Thermodynamic database and reactions
 
