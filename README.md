@@ -1,15 +1,20 @@
+**This is the code associated with "Reactive thermodynamics of crustal eclogitization and foundering" by McMillan, M., Sim, S.J., and and Wilson, C.R.**
+
+Cite the paper: TBD
+
+Cite the code:
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10835976.svg)](https://doi.org/10.5281/zenodo.10835976)
 
 ## Installation
 
-The following command downloads a prebuilt Docker image, starts an interactive container, and binds the local directory to a shared folder inside the container:
+The following downloads a prebuilt Docker image, starts an interactive container, and binds a local directory **eclogite-output** to the output folder inside the container.
 
 ```bash
-docker run -it --rm -v $PWD:/home/tcg/shared/eclogite-tcg registry.gitlab.com/mitchellmcm27/eclogite-tcg
+docker run -it --rm -v ./eclogite-output:/home/tcg/shared/eclogite-tcg/models/output registry.gitlab.com/mitchellmcm27/eclogite-tcg
 ```
 
-The main benefit of using this Docker image is that it includes prebuilt binaries for the thermodynamic database (endmembers and phases) and reaction objects.
-The Docker container also automatically includes several useful dependencies such as
+This Docker image includes prebuilt binaries for the thermodynamic database (endmembers and phases) and reactions.
+It also includes dependencies such as
 - an installation of [ThermoCodegen (TCg)](https://gitlab.com/ENKI-portal/ThermoCodegen), which is required for running the models,
 - the present repository at **~/shared/eclogite-tcg/**,
 - *TCg_SLB*, which provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases,
@@ -23,11 +28,13 @@ As a test, run the following command within the container:
 cd models && python3 parallel_profile.py
 ```
 
-The full suite of models can also be run using
+The paper's resluts can be replicated by running the following command and inspecting the outputs:
 
 ```bash
 python3 parallel_experiment2.py -q
 ```
+
+Model outputs should appear on your local machine in a newly created **eclogite-output** directory.
 
 ## Thermodynamic database
 
