@@ -1,11 +1,29 @@
 FROM registry.gitlab.com/enki-portal/thermocodegen:focal
 
+# Prepare working directory
+ENV EC_DIR /home/tcg/shared/eclogite-tcg
+RUN mkdir $EC_DIR
+WORKDIR $EC_DIR
+
+# copy only what is necessary to build reactions
+# (better cache performance)
+COPY tcg_slb tcg_slb
+RUN cd tcg_slb\
+    && chmod +x -R .\
+    && scripts/generate_reactions_eclogite -v 21\
+    && scripts/build_reactions database/reactions/eclogitization_2024_stx21_rx.rxml
+
+# copy everything else
+COPY . .
+RUN chgrp adm -R .\
+    && chmod g+w+x -R .
+
 # Install Julia and the JSON package
-RUN pip install jill -U
+RUN pip install jill -U\
+    && pip install --upgrade matplotlib julia
 ENV PATH="/usr/local/bin:${PATH}"
 RUN jill install 1.9 --upstream Official --confirm
 RUN julia -e 'using Pkg; Pkg.add(["JSON"]);'
-RUN pip install --upgrade matplotlib julia
 
 # The Perple_X Julia interface requires all files to be in a specific directory
 RUN mkdir ~/resources
@@ -26,26 +44,5 @@ RUN cd ~/resources/perplex-stable\
 # R Stuff
 #RUN apt-get install -y r-base
 #RUN R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp', 'latex2exp'))"
-
-# Prepare working directory
-ENV EC_DIR /home/tcg/shared/eclogite-tcg
-RUN mkdir $EC_DIR
-WORKDIR $EC_DIR
-
-# copy only what is necessary to build reactions
-# (better cache performance)
-COPY tcg_slb tcg_slb
-RUN chmod +x tcg_slb/scripts/generate_reactions_eclogite
-RUN chmod +x tcg_slb/scripts/build_reactions
-
-# Build eclogite reactions
-RUN cd tcg_slb\
-    && scripts/generate_reactions_eclogite -v 21\
-    && scripts/build_reactions database/reactions/eclogitization_2024_stx21_rx.rxml
-
-# copy everything else
-COPY . .
-RUN chgrp adm -R . \
-    && chmod g+w+x -R .
 
 WORKDIR $EC_DIR
