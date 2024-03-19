@@ -10,20 +10,23 @@ docker run -it --rm -v $PWD:/home/tcg/shared/eclogite-tcg registry.gitlab.com/mi
 
 The main benefit of using this Docker image is that it includes prebuilt binaries for the thermodynamic database (endmembers and phases) and reaction objects.
 The Docker container also automatically includes several useful dependencies such as
-- an installation of ThermoCodegen (TCG), which is required for running the models,
+- an installation of [ThermoCodegen (TCg)](https://gitlab.com/ENKI-portal/ThermoCodegen), which is required for running the models,
 - the present repository at **~/shared/eclogite-tcg/**,
-- *TCG_SLB*, which provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases,
+- *TCg_SLB*, which provides convenient Python classes and scripts for working with the Stixrude & Lithgow-Bertelloni (2011, 2021) databases,
 - Python (including numpy, matplotlib, and scipy),
 - Julia, and
 - the equilibrium thermodynamics software Perple_X.
 
-## Thermodynamic database and reactions
+## Thermodynamic database
 
-A custom thermodynamic database using the data from Stixrude and Lithgow-Bertelloni (2021) is included as **tcg_slb/database/tcg_stx21_database.tar.gz**.
+ThermoCodegen was used to generate a custom thermodynamic database using the data from Stixrude and Lithgow-Bertelloni (2021).
+The compiled database is included as **tcg_slb/database/tcg_stx21_database.tar.gz**.
 Although the scripts, source code, and data for generating this database are provided, doing so is not necessary as long as the **.tar.gz** file is in place.
 
+## Reactions 
+
 Descriptions of the eclogitization reactions are included as **\*.rxml** files.
-Because generating the C++ code for these reactions can take several hours, the provided Docker image includes pre-built binaries.
+Because generating the C++ code for these reactions can take some time, the provided Docker image includes pre-built binaries.
 If reactions are edited and need to be re-built, do so as follows:
 
 ```bash
@@ -31,18 +34,13 @@ cd tcg_slb
 scripts/generate_reactions_eclogite -v 21
 scripts/build_reactions database/reactions/[name].rxml
 ```
-It is recommended, but not necessary, to pass the name of the exact reaction that needs to be built, as shown above.
+It is recommended, but not necessary, to pass the path to the exact **.rxml** file that needs to be built, as shown above.
 
-The `scripts/generate_reactions` and `scripts/generate_reactions_eclogite` files provide examples of how to generate a set of reaction descriptions (**.rxml** files) between endmembers of a specific thermodynamic database.
+The `scripts/generate_reactions` and `scripts/generate_reactions_eclogite` files provide examples of how to generate a set of reaction descriptions (**.rxml** files) between endmembers defined in a specific thermodynamic database.
 
-## Model calculations
+## Reactive eclogitization model
 
 Model calculations are provided as Python scripts in the **models** directory.
-
-```bash
-cd models
-```
-
 The following 4 files are included:
 
 - `parallel_experiment2.py` runs the geodynamic model of crustal thickening at the Moho.
@@ -67,7 +65,7 @@ Arguments can be passed as follows to customize the model runs:
 In most cases, you can use the `-c` argument to specifiy any Bulk composition, provided that Perple_X output data exist for it in the **perple_x/output** folder. 
 The only requirement to generate such data is an oxide bulk composition in mol% or wt% (see Perple_x section below).
 
-## Model output
+### Model output
 
 All outputs are saved to the **models/output** directory.
 Outputs will be automatically grouped into subdirectories based on the name of the reaction and composition.
@@ -93,7 +91,7 @@ If a composition needs to be added that does not already exist, use the followin
 - The composition can now be used in python scripts by passing the `-c [name]` argument as described above.
 - Pseudosection calculations in Perple_X (i.e., the **vertex** program) can take significant time, and thus only are only run if necessary. If a composition changes and **vertex** needs to be run again, pass the `-f` argument to `solve_composition` to force Perple_X to re-calculate everything from scratch.
 
-## Additional plotting in R
+### Additional plotting in R
 
 Some plots are more convenient to make in R after the models have been run.
 For this purpose, the model saves a summary of key outputs to a **_summary.csv** file.
