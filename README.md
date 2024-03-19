@@ -1,4 +1,4 @@
-Cite this code using the following DOI: [10.5281/zenodo.10835976](https://doi.org/10.5281/zenodo.10835976).
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10835976.svg)](https://doi.org/10.5281/zenodo.10835976)
 
 ## Get started using Docker
 
