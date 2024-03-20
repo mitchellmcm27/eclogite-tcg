@@ -453,7 +453,6 @@ for setting in tectonic_settings:
 
 # Get equilibrium mantle densities
 ipyrolite = ppx_rho_interpolator("xu_2008_pyrolite")
-iharzburgite = ppx_rho_interpolator("xu_2008_harzburgite")
 
 # Get reaction/phase/endmember parameters
 rxn = get_reaction(rxn_name)
@@ -1190,11 +1189,9 @@ for composition in compositions:
             ax.plot(obj["rho"], obj["z"])
 
         rho_pyrolite=ipyrolite((T, P/1e4))
-        rho_harzburgite=iharzburgite((T,P/1e4))
 
         ax.plot(rho_pyrolite/10, outs_c[0]["z"], "r:")
-        ax.plot(rho_harzburgite/10, outs_c[0]["z"], "g:")
-        ax.legend(["$Da = ${:.1e}".format(d) for d in _Das] +  (["pyrolite", "harzburgite"]), loc="upper right")
+        ax.legend(["$Da = ${:.1e}".format(d) for d in _Das] +  (["pyrolite"]), loc="upper right")
 
         ax.set_ylabel("Depth (km)")
         ax.set_xlabel("Density")
@@ -1286,8 +1283,6 @@ for tectonic_setting in tectonic_settings:
             [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
   
         rho_pyrolite=ipyrolite((T, P/1e4))/10
-        #rho_harzburgite=iharzburgite((T,P/1e4))/10
-
 
         for i, obj in enumerate(outs_c):
             ax = axes[obj["composition"]]
@@ -1314,7 +1309,6 @@ for tectonic_setting in tectonic_settings:
             
             if obj["Da"] == 1:
                 ax.plot(rho_pyrolite, obj["z"]/1e3, "k--",linewidth=0.5)
-                #ax.plot(rho_harzburgite, obj["z"]/1e3, "g--", linewidth=0.5)
 
         plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"pdf")), metadata=pdf_metadata)
         plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"png")))
