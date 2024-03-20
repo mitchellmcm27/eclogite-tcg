@@ -1,48 +1,42 @@
-FROM registry.gitlab.com/enki-portal/thermocodegen:focal
+FROM registry.gitlab.com/cianwilson/thermocodegen:focal
 
-# Prepare working directory
-ENV EC_DIR /home/tcg/shared/eclogite-tcg
-RUN mkdir $EC_DIR
-WORKDIR $EC_DIR
-
-# copy only what is necessary to build reactions
-# (better cache performance)
-COPY tcg_slb tcg_slb
-RUN cd tcg_slb\
-    && chmod +x -R .\
+# Install dependencies
+RUN pip install --upgrade\
+        jill==0.11.5\
+        numpy==1.24.4\
+        scipy==1.10.1\
+        pandas==2.0.3\
+        numexpr==2.7.3\
+        matplotlib==3.7.5\
+        sympy==1.12\
+    && jill install 1.9 --upstream Official --confirm\
+    && julia -e 'using Pkg; Pkg.add(["JSON"]);'\
+    # Clone the eclogitization repo
+    && git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git /home/tcg/shared/eclogite-tcg\
+    && cd /home/tcg/shared/eclogite-tcg\
+    # Set permissions
+    && chgrp adm -R .\
+    && chmod g+w+x -R .\
+    # Generate and build reactions
+    && cd tcg_slb\
     && scripts/generate_reactions_eclogite -v 21\
-    && scripts/build_reactions database/reactions/eclogitization_2024_stx21_rx.rxml
-
-# copy everything else
-COPY . .
-RUN chgrp adm -R .\
-    && chmod g+w+x -R .
-
-# Install Julia and the JSON package
-RUN pip install jill -U\
-    && pip install --upgrade matplotlib julia
-ENV PATH="/usr/local/bin:${PATH}"
-RUN jill install 1.9 --upstream Official --confirm
-RUN julia -e 'using Pkg; Pkg.add(["JSON"]);'
-
-# The Perple_X Julia interface requires all files to be in a specific directory
-RUN mkdir ~/resources
-
-# Install Perple_x v7.0.10
-RUN git clone -n https://github.com/jadconnolly/Perple_X.git ~/resources/perplex-stable \
-    && cd ~/resources/perplex-stable \
-    && git checkout 1aeec2f4f5d31762ecc8a5abbcb6338046406306 \
-    && cd src \
-    && make -j${nproc}
-
-# Copy files
-RUN cd ~/resources/perplex-stable\
+    && scripts/build_reactions database/reactions/eclogitization_2024_stx21_rx.rxml\
+    # Install Perple_x v7.0.10
+    && mkdir ~/resources\
+    && git clone -n https://github.com/jadconnolly/Perple_X.git ~/resources/perplex-stable\
+    && cd ~/resources/perplex-stable\
+    && git checkout 1aeec2f4f5d31762ecc8a5abbcb6338046406306\
+    && cd src\
+    && make -j${nproc}\
+    # copy files to the directory required by the Perple_X Julia interface
+    && cd ~/resources/perplex-stable\
     && cp src/* .\
     && cp -r datafiles/* .\
     && cp optionfiles/* .
 
 # R Stuff
-#RUN apt-get install -y r-base
-#RUN R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp', 'latex2exp'))"
+RUN apt-get update\
+    && apt-get install -y r-base\
+    && R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp','scales','directlabels','showtext'))"
 
-WORKDIR $EC_DIR
+WORKDIR /home/tcg/shared/eclogite-tcg
