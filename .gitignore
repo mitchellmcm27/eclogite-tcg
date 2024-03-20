@@ -2,6 +2,7 @@
 .DS_Store
 *.pickle
 *.build/
+**/database/install
 
 ### CMake ###
 CMakeLists.txt.user
