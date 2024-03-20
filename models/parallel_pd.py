@@ -313,7 +313,7 @@ save_current_fig_as("stime")
 # Plot comparison with Perple_X density
 
 interp = ppx_rho_interpolator(composition,"1000kg/m3")
-fig = plt.figure(figsize=(10,10))
+fig = plt.figure(figsize=(10,5))
 
 # Panel (1): contour reactive density
 axi = fig.add_subplot(1,3,1)
