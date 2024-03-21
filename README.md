@@ -2,8 +2,7 @@
 
 Cite the paper: TBD
 
-Cite the code:
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10835976.svg)](https://doi.org/10.5281/zenodo.10835976)
+Cite the code: [https://doi.org/10.5281/zenodo.10835976](https://doi.org/10.5281/zenodo.10835976)
 
 ## Installation
 
