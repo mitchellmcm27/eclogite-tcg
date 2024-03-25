@@ -29,7 +29,7 @@ As a test, run the following command within the container:
 cd models && python3 parallel_profile.py
 ```
 
-The paper's resluts can be replicated by running the following:
+The paper's results can be replicated by running the following:
 
 ```bash
 python3 parallel_experiment2.py -q
