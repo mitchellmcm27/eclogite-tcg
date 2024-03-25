@@ -40,3 +40,5 @@ RUN apt-get update\
     && R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp','scales','directlabels','showtext'))"
 
 WORKDIR /home/tcg/shared/eclogite-tcg
+
+USER root
