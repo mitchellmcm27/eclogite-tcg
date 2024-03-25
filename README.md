@@ -10,7 +10,7 @@ We provide a prebuilt Docker image (**registry.gitlab.com/mitchellmcm27/eclogite
 The following downloads the image, starts an interactive container, and binds a local directory **./eclogite-output** to the output folder inside the container.
 
 ```bash
-docker run -it --rm -v ./eclogite-output:/home/tcg/shared/eclogite-tcg/models/output registry.gitlab.com/mitchellmcm27/eclogite-tcg
+docker run -it --rm -v $PWD/eclogite-output:/home/tcg/shared/eclogite-tcg/models/output registry.gitlab.com/mitchellmcm27/eclogite-tcg
 ```
 
 Alternatively, users of [VS Code](https://code.visualstudio.com/) can clone this repository and open it in Docker using the provided **.devcontainers.json** (requires the Dev Containers extension).
