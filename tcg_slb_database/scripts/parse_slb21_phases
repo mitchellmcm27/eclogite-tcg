@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+
+import os
+from pathlib import Path
+import re
+import csv
+import pandas as pd
+import ast
+import math
+
+"""
+Changes are indicated in Stixrude & Lithgow-Bertelloni (2021) GJI as follows
+endmember parameters: Table A1
+phase W & W_V : Table A2
+endmember TC0, VD, &SD : Table A3
+
+Strategy:
+- use Table A2 to update W and W_V values
+- initialize TC0, VD, and SD with temporary values from Table A3
+- overwrite TC0, VD, and SD with final values from the endmember CSV table
+
+(Note: The endmember CSV is parsed from Perple_X data,
+    which is based on SLB 2021, but has higher precision.)
+
+A dictionary describing changes between the 2011 and 2021 databases follows.
+"""
+changes = {
+    'plg': [('W', [13000.0])],
+    'sp': [('W', [-500.0])],
+    'ol': [('W', [4700.0])],
+    'wa': [('W', [13200.0])],
+    'ri': [('W', [7600.0])],
+    'opx': [
+        ('W', [0.0, 0.0, 0.0, 32200.0, 32200.0, 48000.0]),
+        ('TC0', [0.0, 5.0, 0.0, 0.0]),
+        ('VD', [0.0, 0.0, 0.0, 0.0]),
+        ('SD', [0.0, 26.76270, 0.0, 0.0]),
+    ],
+    'cpx': [
+        ('W', [0.0, 24700.0, 24700.0, 26000.0, 26000.0, 60100.0, 24300.0, 24300.0, 46000.0, 10000.0]),
+        ('TC0', [0.0, 5.0, 0.0, 0.0, 0.0]),
+        ('VD', [0.0, 0.0, 0.0, 0.0, 0.0]),
+        ('SD', [0.0, 13.38135, 0.0, 0.0, 0.0]),
+    ],
+    'ak': [
+        ('endmember_names', ['MgAkimotoite', 'FeAkimotoite', 'Corundum']),
+        ('W', [0.0, 59300.0, 59300.0]),
+    ],
+    'gt': [
+        #Na-Majroite has a new composition of Na2MgSi5O12 (previously Na2Al2Si4O12) 
+        #-----------------------------
+        # pyp  : Mg3   Al Al Si3 O12
+        # alm  : Fe3   Al Al Si3 O12
+        # gs   : Ca3   Al Al Si3 O12
+        # mgmj : Mg3   Mg Si Si3 O12
+        # namj : Na2Mg Si Si Si3 O12
+        #-----------------------------
+        ('formula_str', 'Na[Na]Ca[Ca]Mg[Mg]Fe[Fe]Al[Al]Si[Si]O12'),
+        ('conversion_strs', [
+            '[0]=([Al]/2.0 - [Fe]/3.0 - [Ca]/3.0)',
+            '[1]=[Fe]/3.0',
+            '[2]=[Ca]/3.0',
+            '[3]=([Mg] - 3.0*([Al]/2.0 - [Fe]/3.0 - [Ca]/3.0))/4.0', 
+            '[4]=[Na]/2.0'
+        ]),
+        ('W', [0.0, 21100.0, 21100.0, 22700.0, 22700.0, 61000.0, 22900.0, 22900.0, 60700.0, 71000.0]),
+        ('sites', [          
+            # m    pyp  al   gr   mgmj namj
+            [3.0, [0.0, 0.0, 1.0, 0.0, 0.0]], #Ca
+            [3.0, [1.0, 0.0, 0.0, 1.0, 0.333333333]], #Mg
+            [3.0, [0.0, 1.0, 0.0, 0.0, 0.0]], #Fe
+            [3.0, [0.0, 0.0, 0.0, 0.0, 0.666666666]], #Na
+            [1.0, [0.0, 0.0, 0.0, 1.0, 0.0]], #Mg
+            [1.0, [1.0, 1.0, 1.0, 0.0, 1.0]], #Al
+            [1.0, [0.0, 0.0, 0.0, 1.0, 1.0]], #Si
+            [1.0, [1.0, 1.0, 1.0, 0.0, 0.0]]  #Al
+        ]),
+        ('TC0', [0.0, 7.5, 0.0, 0.0, 0.0]),
+        ('VD', [0.0, 0.0, 0.0, 0.0, 0.0]),
+        ('SD', [0.0, 40.14405, 0.0, 0.0, 0.0]),
+        ('W_V', [0.0, 0.103, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    ],
+    'cf': [
+        ('d', [1.0, 1.0, 4.06])
+    ],
+    # Note: This phase is called Bridgmanite (bg) in SLB 2021
+    # but we stick with Perovskite to agree with Perple_X data
+    'pv': [
+        ('W', [-11400.0, 35000.0, 0.0])
+    ],
+    'ppv': [
+        ('W', [-11000.0, 35000.0, 35000.0])
+    ],
+    # Magnesiowuestite is renamed Ferropericlase (fp)
+    # and a new endmember (anao) is added.
+    # pe   : Mg2 Mg2 O4
+    # wu   : Fe2 Fe2 O4
+    # anao : Na2 Al2 O4 f
+    'mw': [
+        ('name', 'Ferropericlase'),
+        ('abbrev', 'fp'),
+        ('endmember_names', ['Periclase', 'Wuestite', 'AlphaNaO2']),
+        ('formula_str', 'Mg[Mg]Fe[Fe]Na[Na]Al[Al]O4'),
+        ('conversion_strs', ['[0]=[Mg]/4.0', '[1]=[Fe]/4.0', '[2]=[Na]/2.0']),
+        ('X', [1.0, 1.0, 1.0]),
+        ('d', [1.0, 1.0, 1.0]),
+        ('W', [44000.0, 120000.0, 120000.0]),
+        ('sites', [
+            #    m  pe    wu  anao
+            [2, [1.0, 0.0, 0.0]], # Mg
+            [2, [0.0, 1.0, 0.0]], # Fe
+            [2, [0.0, 0.0, 1.0]], # Na
+            [2, [1.0, 0.0, 0.0]], # Mg
+            [2, [0.0, 1.0, 0.0]], # Fe
+            [2, [0.0, 0.0, 1.0]], # Al
+        ]),
+        ('TC0', [0.0,   191.0,   0.0]),
+        ('VD',  [0.0,   0.0,     0.0]),
+        ('SD',  [0.0,   53.5254, 0.0]),
+        ('W_V', [0.044, 0.0,     0.0]),
+    ],
+    'cf': [
+        ('W', [0.0, 61000.0, 61000.0]),
+    ],
+    # New NAL-phase (nal) added.
+    # mnal : Na Mg2 Al5 Si  O12 = Na  Mg2 Al5 Si O12
+    # fnal : Na Fe2 Al5 Si  O12 = Na  Fe2 Al5 Si O12
+    # nnal : Na Na2 Al3 Si3 O12 = Na3 Al3 Si3   O12
+    'nal': [
+        ('name', 'NaAl'),
+        ('abbrev', 'nal'),
+        ('endmember_names', ['MgNAL', 'FeNAL', 'NaNAL']),
+        ('formula_str', 'Mg[Mg]Na[Na]Al[Al]Si[Si]O12'),
+        ('conversion_strs', ['[0]=[Mg]/2.0', '[1]=[Fe]/2.0', '[2]=([Na] - [Mg]/2.0 - [Fe]/2.0)/3.0']),
+        ('X', [1.0, 1.0, 1.0]),
+        ('d', [1.0, 1.0, 1.0]),
+        ('W', [0.0, -61000.0, -60800.0]),
+        ('sites', [
+        #    m  mnal fnal nnal
+            [1, [1.0, 1.0, 1.0]], # Na
+            [2, [1.0, 0.0, 0.0]], # Mg
+            [2, [0.0, 1.0, 0.0]], # Fe
+            [2, [0.0, 0.0, 1.0]], # Na
+            [5, [1.0, 1.0, 0.6]], # Al
+            [3, [0.333333333, 0.333333333, 1]], # Si
+        ]),
+        ('TC0', [0.0, 5.0, 0.0]),
+        ('VD',  [0.0, 0.0, 0.0]),
+        ('SD',  [0.0, 26.7627, 0.0])
+    ],
+    'co': [
+        ('name', 'Corundum'),
+        ('abbrev', 'cor'),
+        ('endmember_names', ['Corundum']),
+    ],
+    'jdmj': [
+        ('name', 'NaMajorite'),
+        ('formula_str', 'Na[Na]MgSi5O12'),
+        ('abbrev', 'namj')
+    ],
+    # Note: SLB 2021 has "al" for Almandine, but we use "alm" to match Perple_X
+    "al": [
+        ('abbrev', 'alm'),
+    ],
+    'rh2o3': [
+        ('abbrev', 'aperov'),
+    ],
+    # Note: AlphaNaO2 phase added in SLB (2021)
+    'anao':[
+        ('name', 'AlphaNaO2'),
+        ('endmember_names', ['AlphaNaO2']),
+        ('abbrev', 'anao'),
+        ('formula_str', 'Na[Na]Al2O4'),
+        ('conversion_strs', ['[0]=[Na]/2.0']),
+        ('X', [1.0]),
+        ('d', [1.0]),
+        ('W', []),
+        ('sites', [])
+    ],
+    'capv':[
+        ('abbrev', 'ca-pv')
+    ],
+    'cats':[
+        ('abbrev', 'cts')
+    ],
+    # Note: Cristoablite does not appear in SLB 2021,
+    # but it is in the Perple_X data file.
+    'crst':[
+        ('name', 'Cristobalite'),
+        ('endmember_names', ['Cristobalite']),
+        ('abbrev', 'crst'),
+        ('formula_str', 'Si[Si]O2'),
+        ('conversion_strs', ['[0]=[Si]']),
+        ('X', [1.0]),
+        ('d', [1.0]),
+        ('W', []),
+        ('sites', [])
+    ],
+    'hpcfs':[('abbrev', 'fc2/c')],
+    # Note: SLB 2021 has "fecf", but we use "ffer" to match Perple_X
+    'fecf':[('abbrev', 'ffer')],
+    'feak':[('abbrev', 'faki')],
+    'fepv':[('abbrev', 'fperov')],
+    'feri':[('abbrev', 'fring')],
+    'fewa':[('abbrev', 'fwad')],
+    'fnal':[
+        ('abbrev', 'fnal'),
+        ('name', 'FeNAL'),
+        ('endmember_names', ['FeNAL']),
+        ('formula_str', 'NaFe[Fe]Al5SiO12'),
+        ('conversion_strs', ['[0]=[Fe]/2.0']),
+        ('X', [1.0]),
+        ('d', [1.0]),
+        ('W', []),
+        ('sites', []),
+        ('TC0', 5.0),
+        ('SD', 26.7627)
+    ],
+    'hc':[('abbrev', 'herc')],
+    'he':[('abbrev', 'hed')],
+    'hpcen':[('abbrev', 'c2/c')],
+    # Note: SLB 2021 has "mgcf", but we use "mfer" to match Perple_X
+    'mgcf':[('abbrev', 'mfer')],
+    'mgak':[('abbrev', 'aki')],
+    'mgmj':[('abbrev', 'maj')],
+    'mgpv':[('abbrev', 'perov')],
+    'mgri':[('abbrev', 'ring')],
+    'mgts':[('abbrev', 'ts')],
+    'mgwa':[('abbrev', 'wad')],
+    'mnal':[
+        ('abbrev', 'mnal'),
+        ('name', 'MgNAL'),
+        ('endmember_names', ['MgNAL']),
+        ('formula_str', 'NaMg[Mg]Al5SiO12'),
+        ('conversion_strs', ['[0]=[Mg]/2.0']),
+        ('X', [1.0]),
+        ('d', [1.0]),
+        ('W', []),
+        ('sites', [])
+    ],
+    # Note: SLB 2021 has "nacf", but use "nfer" to match Perple_X
+    'nacf':[('abbrev', 'nfer')],
+    'nnal':[
+        ('abbrev', 'nnal'),
+        ('name', 'NaNAL'),
+        ('endmember_names', ['NaNAL']),
+        ('formula_str', 'Na[Na]Al3Si3O12'),
+        ('conversion_strs', ['[0]=[Na]/3.0']),
+        ('X', [1.0]),
+        ('d', [1.0]),
+        ('W', []),
+        ('sites', [])
+    ],
+    'pe':[('abbrev', 'per')],
+    # Note: SLB 2021 has "wu" but we use "wus" to match Perple_X
+    'wu':[('abbrev', 'wus')]
+}
+
+def literal_return(val):
+    try:
+        return ast.literal_eval(val)
+    except (ValueError, SyntaxError) as e:
+        return val
+
+def parse_slb_phases(phase_path, endmember_path, output_file):
+    ph_headers = ['name', 'abbrev', 'endmember_names', 'formula_str', 'conversion_strs', 'X', 'd', 'W', 'sites', 'TC0', 'VD', 'SD']
+    em_headers = ['name', 'formula', 'a0', 'n', 'v0', 'k00', 'k0p', 'theta0', 'gamma0', 'q', 'refS', 'T_r', 'V_r', 'TC0', 'VD', 'SD']
+
+    converter_ph = dict([(h, literal_return) for h in ph_headers])
+    converter_em = dict([(h, literal_return) for h in em_headers])
+    df = pd.read_csv(os.path.join(phase_path), skipinitialspace=True, converters=converter_ph)
+    df.set_index('abbrev', inplace=True)
+
+    df_em = pd.read_csv(os.path.join(endmember_path), skipinitialspace=True, converters=converter_em)
+    df_em.set_index('name', inplace=True)
+    df_em['name'] = df_em.index
+
+    # starting with 2011 phases, apply changes
+    for abbrev, change in changes.items():
+
+        # handle new phases
+        if not abbrev in df.index:
+            rowdata = {}
+            for col, val in changes[abbrev]:
+                rowdata[col] = '{}'.format(val)
+            df.loc[abbrev] = rowdata        
+
+        # sort out potential changes to 'abbrev' first
+        newabbrev = abbrev
+        for col, val in change:
+           if(col=='abbrev'):
+                newabbrev = val
+                df.loc[abbrev, 'abbrev'] = newabbrev
+                df.rename(index={abbrev:newabbrev}, inplace=True)
+                break
+
+        # apply full update
+        for col, val in change:
+            df.loc[newabbrev, col] = '{}'.format(val)
+
+    # get final TC0, VD, and SD values from the endmember table
+    for i, row in df.iterrows():
+        try:
+            names = ast.literal_eval(row['endmember_names'])
+        except:
+            names = row['endmember_names']
+        for c in ['TC0', 'VD', 'SD']:
+            df.at[i, c] = '{}'.format([df_em.loc[name, c] if df_em.loc[name, c] else 0.0 for name in names])
+        wv = df.at[i,'W_V']
+        try:
+            w = ast.literal_eval(df.at[i,'W'])
+        except:
+            w = df.at[i,'W']
+        if not isinstance(wv,str) and math.isnan(wv):
+            df.at[i,'W_V'] = '{}'.format([0.0 for _ in w])
+
+    # make sure the abbrev column still exists, and save result
+    df['abbrev'] = df.index
+    df.to_csv(output_file, index=False, quotechar='"', columns=ph_headers+["W_V"])
+
+if __name__ == '__main__':
+    """
+    Takes as input the SLB 2011 phase definitions and SLB 2021 endmember definitions.
+    Using these, updates the phases to the 2021 version using the SLB GJI paper.
+    """
+    import argparse
+    import os
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--phase_file', action='store', metavar='phase_file', 
+                        type=str, required=True,
+                        help='Path to input CSV of SLB 2011 phases')
+    parser.add_argument('-e', '--endmember_file', action='store', metavar='endmember_file', 
+                        type=str, required=True,
+                        help='Path to input CSV of SLB 2021 endmembers')
+    parser.add_argument('-o', '--output_file', action='store', metavar='output_file', 
+                    type=str, required=True,
+                    help='Path to output CSV of SLB 2021 phases')
+    args = parser.parse_args()
+    df = parse_slb_phases(args.phase_file, args.endmember_file, args.output_file)

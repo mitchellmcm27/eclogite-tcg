@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+
+import os,sys
+import pandas as pd
+import ast
+import numpy as np
+import sympy as sym
+from collections import OrderedDict
+from thermocodegen.coder import coder
+
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python'))
+from tcg_slb.reactions import SLBReactions
+
+reference = 'generate_reactions_eclogite'
+
+os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
+def generate_reactions(outdir,version):
+    
+    an = ['Feldspar', 'Anorthite']    
+    ab = ['Feldspar', 'Albite']
+    fs = ['Orthopyroxene', 'Ferrosilite']
+    oEn = ['Orthopyroxene', 'Enstatite']
+    mgts = ['Orthopyroxene', 'MgTschermaks']
+    oDi = ['Orthopyroxene', 'OrthoDiopside']
+    hed = ['Clinopyroxene', 'Hedenbergite']
+    di = ['Clinopyroxene', 'Diopside']
+    jd = ['Clinopyroxene', 'Jadeite']
+    cats = ['Clinopyroxene', 'CaTschermaks']
+    cEn = ['Clinopyroxene', 'Clinoenstatite']
+    alm = ['Garnet', 'Almandine']
+    pyp = ['Garnet', 'Pyrope']
+    gs = ['Garnet', 'Grossular']
+    qz = ['Quartz', 'Quartz']
+    ky = ['Kyanite', 'Kyanite']
+
+    phases=[
+        'Clinopyroxene',
+        'Orthopyroxene',
+        'Quartz',
+        'Feldspar',
+        'Garnet',
+        'Kyanite',
+    ]
+
+    reactions=[
+        ([hed, oEn],[di, fs]), # Fe-Mg exchange, Cpx-Opx
+        ([pyp, fs],[alm, oEn]), # Fe-Mg exchange, Grt-Opx
+        ([pyp, hed], [alm, di]), # Ellis & Green 1979 (1), #Fe-Mg exchange, Grt-Cpx
+        ([oEn],[cEn]),
+        ([oDi],[di]),
+        ([cats, pyp], [gs, mgts]), # cation exchange with Tschermaks
+        ([an], [cats, qz]), # Paria et al (paragraph 2, cites Herzberg 1978), GR67b
+        ([an, oEn], [di, mgts, qz]), # Green & Ringwood 1967 (a) - GR67a
+        ([an, oEn], [pyp, di, qz]),  # GR67c, Paria et al (B)
+        ([an, oEn], [pyp, gs, qz]), # GR67d
+        ([an, fs], [alm, hed, qz]), # Paria et al (A), GR67c
+        ([an, fs], [alm, gs, qz]),  # GR67d
+        ([oEn, mgts], [pyp]), # Paria et al (paragraph 2, cites RWood 1974), GR67e, Wood & Banno 1973 (1)
+        ([oEn, cats], [gs, pyp]), # GR67f
+        ([ab], [jd, qz]), # Paria et al (paragraph 2, Reinsch 1977 cited in Newton 1983), GR67g
+        ([gs, pyp, qz], [di, ky]),
+        ([gs, alm, qz], [hed, ky]),
+        ([pyp, qz], [cEn, ky]),
+        ([gs, ky], [cats, qz]),
+        ([an], [ky, gs, qz]),  # Koziol et al 1988 (paragraph 1), GR67o
+        ([fs, mgts], [pyp, alm]), 
+        ([fs, cats], [gs, pyp, alm]),  
+        ([an, pyp], [mgts, gs, qz]), # swapped pyp and mgts because it gets swapped by TCG
+        ([di, an], [gs, pyp, qz]), 
+        ([hed, an], [gs, alm, qz]),
+        #([cats, an], [gs, qz]), # removed because this reduces to an = cats + qtz
+        ([an, cEn], [gs, pyp, qz])
+    ]
+    
+    generate_reaction(outdir,version,'eclogitization_2024',phases,reactions)
+      
+def generate_reaction(outdir, version, name, phases, reactions):
+    
+    dbfile = os.path.join(os.path.pardir, 'database', 'tcg_{}_database.tar.gz'.format(version))
+    dbpath = 'file://{}'.format(dbfile)
+    rx_suffix = '_{}_rx'.format(version)
+    phase_suffix = '_{}_ph'.format(version)
+    em_suffix = '_{}_em'.format(version)
+
+    try:
+        os.mkdir(outdir)
+    except FileExistsError:
+        pass
+
+    name = name+rx_suffix
+    phases = [ph+phase_suffix for ph in phases]
+    rxn = SLBReactions(name, len(reactions), phases, dbpath, reference)
+    for reaction in reactions:
+        reactants = [[[ph+phase_suffix, em+em_suffix]
+                      for ph, em in reaction[i]] for i in range(2)]
+        rxn.add_reaction(*reactants)
+    rxn.tofile(outdir)
+
+
+if __name__ == '__main__':
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(
+        description="""Generate rxmls for a given thermodynamic database.""")
+    parser.add_argument('-o', '--outdir', action='store', metavar='outdir',
+                        default=os.path.join(os.path.pardir, 'database', 'reactions'), type=str, required=False,
+                        help='Output directory for rxml files (defaults to ../database/reactions relative to script).')
+    parser.add_argument('-v', '--version', action='store', metavar='version', default='slb', type=str, required=False,
+                        help='SLB database version as "slb" (default) or "slb21".')
+    args = parser.parse_args()
+    print(args.outdir)
+    generate_reactions(args.outdir, args.version)
