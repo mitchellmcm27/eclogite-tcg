@@ -1,5 +1,5 @@
 {
     "python.analysis.extraPaths": [
-        "tcg_slb/python"
+        "tcg_slb_database/python"
     ]
 }

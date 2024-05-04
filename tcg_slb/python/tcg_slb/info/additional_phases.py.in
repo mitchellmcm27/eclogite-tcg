@@ -1,8 +1,0 @@
-names = [
-$additional_phase_names
-        ]
-
-abbrevs = [
-$additional_phase_abbrevs
-          ]
-

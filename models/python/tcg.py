@@ -37,7 +37,7 @@ def phi2F(rxn, phii, cik, T=900.,p=10000.,eps=1e-5):
 
 def get_reaction(rxnName):
     pv = repr(sys.version_info.major)+'.'+repr(sys.version_info.minor)
-    path = os.path.join(os.path.pardir, 'tcg_slb','database', 'install', rxnName,
+    path = os.path.join(os.path.pardir, 'tcg_slb_database','database', 'install', rxnName,
                         'lib', 'python'+pv, 'site-packages/')  # the final slash is necessary
     sys.path.append(path)
     tcgdb = __import__('py_'+rxnName)

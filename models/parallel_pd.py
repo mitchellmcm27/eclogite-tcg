@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'tcg_slb','python'))
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'tcg_slb_database','python'))
 
 from python.tcg import x2c,phi2F,get_reaction,composition_to_label, custom_solve
 from python.perplex import ppx_point_composition, ppx_rho_interpolator

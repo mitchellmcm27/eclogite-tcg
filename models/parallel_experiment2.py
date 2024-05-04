@@ -1,5 +1,5 @@
 import sys,os
-sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'tcg_slb','python'))
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'tcg_slb_database','python'))
 
 import pickle
 from python.tcg import get_reaction,get_names,x2c,phi2F

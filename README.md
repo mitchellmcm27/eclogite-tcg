@@ -19,7 +19,7 @@ The Docker image includes prebuilt binaries for the thermodynamic database (endm
 It also includes the following dependencies:
 - [ThermoCodegen (TCg)](https://gitlab.com/ENKI-portal/ThermoCodegen),
 - a copy of this repository at **~/shared/eclogite-tcg/**,
-- *TCg_SLB*, a convenient Python interface by Cian Wilson for the Stixrude & Lithgow-Bertelloni (2011, 2021) databases,
+- *tcg_slb_database*, a convenient Python interface by Cian Wilson for the Stixrude & Lithgow-Bertelloni (2011, 2021) databases,
 - Python, Julia, and R languages,
 - [Perple_X](https://github.com/jadconnolly/Perple_X) (v7.0.10) equilibrium thermodynamics software
 
@@ -40,7 +40,7 @@ Model outputs should appear on your local machine in a newly created **eclogite-
 ## Thermodynamic database
 
 ThermoCodegen was used to generate a custom thermodynamic database using the data from Stixrude and Lithgow-Bertelloni (2021).
-The compiled database is included as **tcg_slb/database/tcg_stx21_database.tar.gz**.
+The compiled database is included as **tcg_slb_database/database/tcg_stx21_database.tar.gz**.
 Although the scripts, source code, and data for generating this database are provided, doing so is not necessary as long as the **.tar.gz** file is in place.
 
 ## Reactions 
@@ -50,7 +50,7 @@ Because generating the C++ code for these reactions can take some time, the prov
 If reactions are edited and need to be re-built, do so as follows:
 
 ```bash
-cd tcg_slb
+cd tcg_slb_database
 scripts/generate_reactions_eclogite -v 21
 scripts/build_reactions database/reactions/[name].rxml
 ```

@@ -23,7 +23,7 @@ RUN cd /home/tcg/shared/eclogite-tcg\
     && chgrp adm -R .\
     && chmod g+w+x -R .\
     # Generate and build reactions
-    && cd tcg_slb\
+    && cd tcg_slb_database\
     && scripts/generate_reactions_eclogite -v 21\
     && scripts/build_reactions database/reactions/eclogitization_2024_stx21_rx.rxml\
     # Install Perple_x v7.0.10
