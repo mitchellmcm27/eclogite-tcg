@@ -1,0 +1,145 @@
+<?xml version='1.0' encoding='utf-8'?>
+<phase_options>
+  <name name="Quartz_slb21_ph">
+    <abbrev name="qtz"/>
+  </name>
+  <formula>
+    <formula_string>
+      <string_value lines="1">Si[Si]O2</string_value>
+    </formula_string>
+    <conversion_string>
+      <string_value lines="1">['[0]=[Si]']</string_value>
+    </conversion_string>
+    <test_string>
+      <string_value lines="1">['[0] &gt; 0.0']</string_value>
+    </test_string>
+  </formula>
+  <reference>
+    <string_value lines="1">generate_phases</string_value>
+  </reference>
+  <endmembers>
+    <endmember_name name="Quartz_slb21_em"/>
+  </endmembers>
+  <free_energy_model name="Gibbs">
+    <variable name="T">
+      <rank name="Scalar"/>
+      <units>K</units>
+    </variable>
+    <variable name="P">
+      <rank name="Scalar"/>
+      <units>bar</units>
+    </variable>
+    <variable name="n">
+      <rank name="Vector">
+        <size>K</size>
+      </rank>
+      <units>mol</units>
+      <symbol>
+        <string_value lines="1">Matrix([[n1]])</string_value>
+      </symbol>
+    </variable>
+    <function name="mu">
+      <type name="external">
+        <rank name="Vector">
+          <size>K</size>
+        </rank>
+        <variable name="T">
+          <rank name="Scalar"/>
+          <units>K</units>
+        </variable>
+        <variable name="P">
+          <rank name="Scalar"/>
+          <units>bar</units>
+        </variable>
+      </type>
+      <symbol>
+        <string_value lines="1">Matrix([[mu1(T, P)]])</string_value>
+      </symbol>
+    </function>
+  </free_energy_model>
+  <parameters>
+    <parameter name="T_r">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">300</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'K'</string_value>
+        </units>
+      </rank>
+    </parameter>
+    <parameter name="P_r">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">1</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'bar'</string_value>
+        </units>
+      </rank>
+    </parameter>
+    <parameter name="R">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">8.31446261815324</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'J/K/mol'</string_value>
+        </units>
+      </rank>
+    </parameter>
+    <parameter name="d_0">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">1</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'None'</string_value>
+        </units>
+      </rank>
+    </parameter>
+    <parameter name="T_C0_0">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">847</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'K'</string_value>
+        </units>
+      </rank>
+    </parameter>
+    <parameter name="V_D_0">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">0.1359</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'cm^3/mol/10'</string_value>
+        </units>
+      </rank>
+    </parameter>
+    <parameter name="S_D_0">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">5.76</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'J/mol/K'</string_value>
+        </units>
+      </rank>
+    </parameter>
+  </parameters>
+  <functions/>
+  <potential name="G">
+    <expression>
+      <string_value type="code" language="python" lines="20">G = (
+n1*mu1(T, P) + Piecewise((n1*(3*P*V_D_0 - 3*S_D_0*T +
+2*S_D_0*T_C0_0)/3, T &gt;= P*V_D_0/S_D_0 + T_C0_0),
+(n1*(S_D_0*T_C0_0*(Min(4, sqrt((P*V_D_0 - S_D_0*(T -
+T_C0_0))/(S_D_0*T_C0_0)))**3 - 1) - 3*(P*V_D_0 - S_D_0*(T -
+T_C0_0))*(Min(4, sqrt((P*V_D_0 - S_D_0*(T - T_C0_0))/(S_D_0*T_C0_0)))
+- 1))/3, True))
+)</string_value>
+    </expression>
+  </potential>
+</phase_options>

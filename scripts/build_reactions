@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+usage()
+{
+    echo "usage: build_reactions [-d] [-h] [rxml [rxml] [...]] "
+}
+
+full_path=$(realpath $0)
+script_path=$(dirname $full_path)
+repo_path=$(dirname $script_path)
+db_path=$repo_path/database
+
+FLAGS=""
+FILENAMES=""
+while [ -n "$1" ]; do
+    case $1 in
+        -d )           FLAGS=$FLAGS" --debug"
+                       ;;
+        -h | --help )           usage
+                                exit
+                                ;;
+        * )                     FILENAMES="${FILENAMES} $(realpath $1)"
+                                ;;
+    esac
+    shift
+done
+
+if [ -z "$FILENAMES" ]; then
+  for f in `find $db_path/reactions -type f -name '*.rxml'`
+  do
+    FILENAMES="${FILENAMES} $(realpath $f)"
+  done
+fi
+
+cd $db_path
+for f in $FILENAMES
+do
+  echo $f
+  tcg_buildrx $f -i install $FLAGS
+done
+
+

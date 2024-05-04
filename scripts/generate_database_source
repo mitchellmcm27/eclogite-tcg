@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+usage()
+{
+    echo "usage: generate_database_source [-b] [-h] [-v slb|slb21]"
+}
+
+full_path=$(realpath $0)
+script_path=$(dirname $full_path)
+repo_path=$(dirname $script_path)
+db_path=$repo_path/database
+db=slb
+
+FLAGS="--just_src -z -i"
+while [ -n "$1" ]; do
+    case $1 in
+        -b )
+          FLAGS="-i install"
+          shift
+          ;;
+        -h | --help )
+          usage
+          exit
+          ;;
+        -v | --version )
+          db=$2
+          shift 2
+          ;;
+        * )
+          echo "ERROR: Unknown option $1"
+          usage
+          exit 1
+          ;;
+    esac
+done
+
+cd $db_path
+tcg_builddb --calibfile params.csv $FLAGS -l tcg_"$db"_database
