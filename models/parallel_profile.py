@@ -16,7 +16,7 @@ from python.perplex import ppx_point_composition, ppx_profile_data
 ### ------------ INPUTS -------------------
 reference= 'parallel_profile'
 composition = 'hacker_2015_md_xenolith'
-rxn_name = 'eclogitization_2024_stx21_rx'
+rxn_name = 'eclogitization_2024_slb21_rx'
 
 # end time of reactions, change with -e argument
 end_t = 1
@@ -181,14 +181,14 @@ df = ppx_profile_data(composition)
 
 # T(K), P(bar), Pl, Pl, Cpx, Opx, qtz, Gt, ky  
 phase_name_to_col_name = {
-    "Clinopyroxene_stx21_ph":"Cpx3",
-    "Orthopyroxene_stx21_ph":"Opx",
-    "Quartz_stx21_ph":"qtz",
-    "Feldspar_stx21_ph":"Pl2",
-    "Garnet_stx21_ph":"Gt2",
-    "Kyanite_stx21_ph":"ky",
-    "Spinel_stx21_ph":"Sp",
-    "Olivine_stx21_ph": "O"
+    "Clinopyroxene_slb21_ph":"Cpx3",
+    "Orthopyroxene_slb21_ph":"Opx",
+    "Quartz_slb21_ph":"qtz",
+    "Feldspar_slb21_ph":"Pl2",
+    "Garnet_slb21_ph":"Gt2",
+    "Kyanite_slb21_ph":"ky",
+    "Spinel_slb21_ph":"Sp",
+    "Olivine_slb21_ph": "O"
 }
 
 hs = []
@@ -220,7 +220,7 @@ if(df is not None):
 
 
 if(df is not None):
-    if("O" in df.columns and "Olivine_stx21_ph" not in [p.name() for p in rxn.phases()]):
+    if("O" in df.columns and "Olivine_slb21_ph" not in [p.name() for p in rxn.phases()]):
         y = df["O"]/100
         ax.plot(xvar,y,"-",linewidth=1,alpha=0.5,color="black")
     if("Aki" in df.columns):

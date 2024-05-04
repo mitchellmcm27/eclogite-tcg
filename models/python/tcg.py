@@ -47,41 +47,41 @@ def get_reaction(rxnName):
 
 def get_names(rxn):
     phase_names = [p.name() for p in rxn.phases()]
-    phase_names = [s.replace("_stx21_ph","") for s in phase_names]
+    phase_names = [s.replace("_slb21_ph","") for s in phase_names]
 
     endmember_names = [em.name() for p in rxn.phases() for em in p.endmembers()]
-    endmember_names = [s.replace("_stx21_em","") for s in endmember_names]
+    endmember_names = [s.replace("_slb21_em","") for s in endmember_names]
     return phase_names, endmember_names
 
 def latex_reactions(rxn):
     '''
     rudnick_2014_lower_crust
-    Reaction object: eclogitization_agu18_stx21_rx
+    Reaction object: eclogitization_2024_slb21_rx
 
-    Phase 0 Clinopyroxene_stx21_ph (cpx)
-         Endmember 0 Diopside_stx21_em : CaMgSi2O6_(cpx)
-         Endmember 1 Hedenbergite_stx21_em : CaFeSi2O6_(cpx)
-         Endmember 2 Clinoenstatite_stx21_em : Mg2Si2O6_(cpx)
-         Endmember 3 CaTschermaks_stx21_em : CaAl2SiO6_(cpx)
-         Endmember 4 Jadeite_stx21_em : NaAlSi2O6_(cpx)
-    Phase 1 Orthopyroxene_stx21_ph (opx)
-         Endmember 0 Enstatite_stx21_em : Mg2Si2O6_(opx)
-         Endmember 1 Ferrosilite_stx21_em : Fe2Si2O6_(opx)
-         Endmember 2 MgTschermaks_stx21_em : MgAl2SiO6_(opx)
-         Endmember 3 OrthoDiopside_stx21_em : CaMgSi2O6_(opx)
-    Phase 2 Quartz_stx21_ph (qtz)
-         Endmember 0 Quartz_stx21_em : SiO2_(qtz)
-    Phase 3 Feldspar_stx21_ph (plg)
-         Endmember 0 Anorthite_stx21_em : CaAl2Si2O8_(plg)
-         Endmember 1 Albite_stx21_em : NaAlSi3O8_(plg)
-    Phase 4 Garnet_stx21_ph (gt)
-         Endmember 0 Pyrope_stx21_em : Mg3Al2Si3O12_(gt)
-         Endmember 1 Almandine_stx21_em : Fe3Al2Si3O12_(gt)
-         Endmember 2 Grossular_stx21_em : Ca3Al2Si3O12_(gt)
-         Endmember 3 MgMajorite_stx21_em : Mg4Si4O12_(gt)
-         Endmember 4 NaMajorite_stx21_em : Na2Al2Si4O12_(gt)
-    Phase 5 Kyanite_stx21_ph (ky)
-         Endmember 0 Kyanite_stx21_em : Al2SiO5_(ky)
+    Phase 0 Clinopyroxene_slb21_ph (cpx)
+         Endmember 0 Diopside_slb21_em : CaMgSi2O6_(cpx)
+         Endmember 1 Hedenbergite_slb21_em : CaFeSi2O6_(cpx)
+         Endmember 2 Clinoenstatite_slb21_em : Mg2Si2O6_(cpx)
+         Endmember 3 CaTschermaks_slb21_em : CaAl2SiO6_(cpx)
+         Endmember 4 Jadeite_slb21_em : NaAlSi2O6_(cpx)
+    Phase 1 Orthopyroxene_slb21_ph (opx)
+         Endmember 0 Enstatite_slb21_em : Mg2Si2O6_(opx)
+         Endmember 1 Ferrosilite_slb21_em : Fe2Si2O6_(opx)
+         Endmember 2 MgTschermaks_slb21_em : MgAl2SiO6_(opx)
+         Endmember 3 OrthoDiopside_slb21_em : CaMgSi2O6_(opx)
+    Phase 2 Quartz_slb21_ph (qtz)
+         Endmember 0 Quartz_slb21_em : SiO2_(qtz)
+    Phase 3 Feldspar_slb21_ph (plg)
+         Endmember 0 Anorthite_slb21_em : CaAl2Si2O8_(plg)
+         Endmember 1 Albite_slb21_em : NaAlSi3O8_(plg)
+    Phase 4 Garnet_slb21_ph (gt)
+         Endmember 0 Pyrope_slb21_em : Mg3Al2Si3O12_(gt)
+         Endmember 1 Almandine_slb21_em : Fe3Al2Si3O12_(gt)
+         Endmember 2 Grossular_slb21_em : Ca3Al2Si3O12_(gt)
+         Endmember 3 MgMajorite_slb21_em : Mg4Si4O12_(gt)
+         Endmember 4 NaMajorite_slb21_em : Na2Al2Si4O12_(gt)
+    Phase 5 Kyanite_slb21_ph (ky)
+         Endmember 0 Kyanite_slb21_em : Al2SiO5_(ky)
 
     Reaction 0
          0.666667 CaFeSi2O6_(cpx) + 0.333333 Mg2Si2O6_(opx) -> 0.666667 CaMgSi2O6_(cpx) + 0.333333 Fe2Si2O6_(opx)

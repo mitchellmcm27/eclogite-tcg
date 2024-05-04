@@ -46,7 +46,7 @@ bous_eclogite <- data.frame(
 ) %>%
   as_tibble
 
-dat <- read_csv('../models/output/parallel_experiment2/eclogitization_2024_stx21_rx/_summary.csv') %>%
+dat <- read_csv('../models/output/parallel_experiment2/eclogitization_2024_slb21_rx/_summary.csv') %>%
   mutate(critical_depth = ifelse(critical_depth > 80e3, NA, critical_depth)) %>%
   mutate(S0 = 6000) %>%
   mutate(h0 = 50e3) %>%

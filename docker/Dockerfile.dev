@@ -2,7 +2,7 @@ FROM registry.gitlab.com/cianwilson/thermocodegen:focal
 
 USER tcg
 # Clone the eclogitization repo
-RUN git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git /home/tcg/shared/eclogite-tcg
+RUN git clone -b dev https://gitlab.com/mitchellmcm27/eclogite-tcg.git /home/tcg/shared/eclogite-tcg
 
 USER root
 
@@ -24,8 +24,8 @@ RUN cd /home/tcg/shared/eclogite-tcg\
     && chmod g+w+x -R .\
     # Generate and build reactions
     && cd tcg_slb_database\
-    && scripts/generate_reactions_eclogite -v 21\
-    && scripts/build_reactions database/reactions/eclogitization_2024_stx21_rx.rxml\
+    && scripts/generate_reactions_eclogite -v slb21\
+    && scripts/build_reactions database/reactions/eclogitization_2024_slb21_rx.rxml\
     # Install Perple_x v7.0.10
     && mkdir ~/resources\
     && git clone -n https://github.com/jadconnolly/Perple_X.git ~/resources/perplex-stable\

@@ -40,7 +40,7 @@ Model outputs should appear on your local machine in a newly created **eclogite-
 ## Thermodynamic database
 
 ThermoCodegen was used to generate a custom thermodynamic database using the data from Stixrude and Lithgow-Bertelloni (2021).
-The compiled database is included as **tcg_slb_database/database/tcg_stx21_database.tar.gz**.
+The compiled database is included as **tcg_slb_database/database/tcg_slb21_database.tar.gz**.
 Although the scripts, source code, and data for generating this database are provided, doing so is not necessary as long as the **.tar.gz** file is in place.
 
 ## Reactions 
@@ -75,7 +75,7 @@ Arguments can be passed as follows to customize the model runs:
 |-----------------|------------------------------------|------------------------------|
 |   `-n [int]`    | Number of CPU processes to use     | `mp.cpu_count()`             |
 |   `-c [string]` | Bulk composition to use, by name   | hacker_2015_md_xenolith, or an array of 4 compositions   |
-|   `-r [string]` | Reaction to use, by name           | eclogitization_2024_stx21_rx |
+|   `-r [string]` | Reaction to use, by name           | eclogitization_2024_slb21_rx |
 |   `-q`          | "Quick" mode (_Da_ ≤ 1e4)      | False                        |
 |   `-f`          | Force model to re-calculate              | False                        |
 

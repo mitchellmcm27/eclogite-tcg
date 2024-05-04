@@ -30,7 +30,7 @@ plt.rc('figure', titlesize=MEDIUM_SIZE)  # fontsize of the figure title
 ### ======================= INPUTS ============================
 reference = "parallel_pd"
 composition = "hacker_2015_md_xenolith"
-rxn_name = "eclogitization_2024_stx21_rx"
+rxn_name = "eclogitization_2024_slb21_rx"
 
 # number of nodes in each dimension (T,P) = (x,y)
 nP = 80
