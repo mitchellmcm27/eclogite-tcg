@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/cianwilson/thermocodegen:focal
+FROM registry.gitlab.com/cianwilson/thermocodegen:jammy-merge-upgrades
 
 USER tcg
 # Clone the eclogitization repo
