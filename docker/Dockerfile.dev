@@ -2,7 +2,7 @@ FROM registry.gitlab.com/cianwilson/thermocodegen:jammy-merge-upgrades
 
 USER tcg
 # Clone the eclogitization repo
-RUN git clone -b dev https://gitlab.com/mitchellmcm27/eclogite-tcg.git /home/tcg/shared/eclogite-tcg
+RUN git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git /home/tcg/shared/eclogite-tcg
 
 USER root
 
