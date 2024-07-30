@@ -1164,8 +1164,6 @@ for f in fluid_weakening:
         #plt.savefig(Path(output_path,"_instability_depth.Da{}.f{}.{}".format(_da,f,"png")))
         plt.close(fig2)
 
-exit()
-
 ##########################################################
 # Summary plots for every composition & tectonic setting #
 ##########################################################
