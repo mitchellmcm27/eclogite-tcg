@@ -51,7 +51,7 @@ If reactions are edited and need to be re-built, do so as follows:
 
 ```bash
 cd tcg_slb_database
-scripts/generate_reactions_eclogite -v 21
+scripts/generate_reactions_eclogite -v slb21
 scripts/build_reactions database/reactions/[name].rxml
 ```
 It is recommended, but not necessary, to pass the path to the exact **.rxml** file that needs to be built, as shown above.
