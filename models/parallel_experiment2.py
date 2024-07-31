@@ -1031,7 +1031,7 @@ for f in fluid_weakening:
 
         for i, obj in enumerate(outs_c):
             composition = obj["composition"]
-
+            setting = obj["setting"]
             if composition=='mackwell_1998_maryland_diabase':
                 color='dodgerblue'
             elif composition=='hacker_2015_md_xenolith':
@@ -1115,8 +1115,9 @@ for f in fluid_weakening:
             plt.plot(h[h<=80e3-critical_h]/1e3,tb_yr[h<=80e3-critical_h], linewidth=(root_T[-1]/1273.15)**2, color=color)
             plt.plot(80e3-critical_h, (80e3-critical_h)/v0/yr, 'o',color=color)
 
-            if(f==1):
+            if(f==0.25 and _da==3000):
                 print("composition: "+composition)
+                print("setting: "+setting)
                 print("max drho: {:.2f}".format(max_drho))
                 print("f: {:.2f}".format(f))
                 print("T: {:.2f} K".format(root_T[-1]))
