@@ -1013,9 +1013,6 @@ for f in fluid_weakening:
     for _da in [3,30,300,3000]:
         # Setup figure for Rayleigh-Taylor analysis by composition
         fig1 = plt.figure(figsize=(3.75, 3.5))
-        fig2 = plt.figure(figsize=(3.75, 3.5))
-
-        plt.figure(fig1)
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         # y axis is time (yr) in log scale
         # x axis is layer thickness (km), linear
@@ -1026,17 +1023,6 @@ for f in fluid_weakening:
         plt.plot(np.logspace(5,8,num=200)*v0_yr/1e3, np.logspace(5,8,num=200),'k-')
         plt.plot(np.logspace(5,8,num=200)*0.7*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
         plt.plot(np.logspace(5,8,num=200)*1.3*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
-        plt.gca().set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
-
-        plt.figure(fig2)
-        plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-        plt.gca().set_ylim([1e5,5e7])
-        plt.gca().set_yscale("log")
-        plt.gca().set_xlim([50,120])
-        #v0_yr = v0 * yr # converted from m/s to m/yr
-        #plt.plot(np.logspace(5,8,num=200)*v0_yr/1e3, np.logspace(5,8,num=200),'k-')
-        #plt.plot(np.logspace(5,8,num=200)*0.7*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
-        #plt.plot(np.logspace(5,8,num=200)*1.3*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
         plt.gca().set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
 
         outs_c = sorted([o for o in scenarios_out 
@@ -1055,81 +1041,60 @@ for f in fluid_weakening:
             else:
                 continue
             
-            print("composition: "+composition)
             T = obj["T"]
             P = obj["P"]
             max_temp = obj["T1"]
             Da = obj["Da"]
-            h_crit = obj["critical_depth"]
-            t_crit_yr = obj["critical_time"]*t0/3.154e7
+            critical_h = obj["critical_depth"]
             rho_pyrolite=np.array(ipyrolite((T, P/1e4)))*100. # kg/m3
-
-            dens_rate = obj["max_densification_rate_100kyr"]/1e6 # kg/m3/Myr -> kg/m3/yr
 
             densities = np.array(obj["rho"]) * 1000.
             drho = densities - rho_pyrolite
             is_root = drho > 0.
-
+            max_drho = max(drho)
+            if(max_drho <= 0):
+                continue
             root_drho = drho[is_root]
             root_T= T[is_root]
-
-            max_drho = max(drho)
-            if(max_drho < 0):
-                continue
             
-            print("max drho: {:.2f}".format(max_drho))
-
-            times_unitless = obj["time"]
-            times_yr = times_unitless * t0/yr
-
             # thickness over time
-            h = times_yr*(v0*yr) # meters
-
-            #drhos = np.array(times*dens_rate)
-            #drhos[drhos > max_drho] = max_drho
-            drhos = np.ones(h.size)*root_drho[-1]
-            drhos[:root_drho.size] = root_drho
-
-            temp = np.ones(h.size)*max_temp
-            temp[:root_T.size] = root_T
-            temp = np.mean(root_T)
-
-            avg_drho = np.array([sum(drhos[:ir+1])/(ir+1) for ir,r in enumerate(drhos)])   
-
+            h = np.linspace(0,40e3,1000) # meters
+            times_yr =  obj["time"] * t0/yr
+      
+            # non-Newtonian deformation of eclogite
             Rgas = 8.3145 # J/mol/K
             g = 9.81 # m/s2
-            # non-Newtonian deformation
-
-            # For Eclogite
             A_Mpa = 10.**3.3 # Jin 2001 eclogite, following Molnar & Garzione, Zieman
             Q = 480.e3 # kJ/mol for eclogite
             n=3.4
-
-            # For Wet Olivine
+            # wet olivine
             #A_Mpa = 1.9e3 # wet olivine
             #Q = 420e3
             #n = 3.
 
             A = A_Mpa*(1e6)**(-n) # Pa^-3.4 s^-1
             F = 3.**(-(n+1.)/2./n)*(2)**(1./n) # convert imposed strain fields in lab to a general geometry
-            B = f*F*(A)**(-1./n)*np.exp(Q/(n*Rgas*temp)) # Pa s = kg/m/s
+            B = f*F*(A)**(-1./n)*np.exp(Q/(n*Rgas*root_T)) # Pa s = kg/m/s
 
-            print("T: {:.2f} C".format(temp-273.15))
-            print("B: {:.2e}".format(B))
-
-            Timescale = (B/(2.*avg_drho*g*h))**n # Eq 7, gives a timescale in seconds
+            # High-stress version of B (Evans & Goetze 1979, Molnar & Jones 2004)
+            eta0 = 5.7e11 # 1/s
+            sigma0 = 8.5e9 # Pa
+            Ha = 525.e3 # J/mol/K
+            E = 1.e-14 # sqrt of 2nd invariant strain rate (1/s)
+            B_HS = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*root_T)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
             
+            # effective viscosity
+            B_eff = B
+            B_eff[root_T<1000] = np.minimum(B[root_T<1000],B_HS[root_T<1000])
+            B_eff = np.mean(B_eff) # depth average
+
             # growth rate factor, Jull & Kelemen 2001 Fig. 15
-            Cp = 0.66 # strong layer, follows Zieman
-            # Zieman assumes 33% for initial displacement, Z0
+            Cp = 0.66 # strong layer, L>>h, following Zieman
+            # 33% for initial perturbation amplitude, following Zieman
             Zp0 = 0.33
 
+            Timescale = (B_eff/(2.*max_drho*g*h))**n # Eq 7, gives a timescale in seconds
             tbp0 = ((n/Cp)**n)*((Zp0)**(1-n))/(n-1) # Eq 12, dimensionless time for 100% deflection
-            # on the order of 100?
-            
-            print("tbp0: {:.2e}".format(tbp0))
-
-            # Timescale is approx 1e15 seconds
 
             exx = 1e-14 # horizontal strain rate, Behn et al. 2007, Zieman
             epxx = exx * Timescale # by Eq. 8, dimensionless, approx 10
@@ -1140,29 +1105,30 @@ for f in fluid_weakening:
             dtpdep = -0.5 # assuming it is in log units
 
             exponent = np.double(-epxx/tbp0*dtpdep) # ~1e14?
-            print("exponent: {:.2e} -- {:.2e}".format(min(exponent),max(exponent)))
-            print("t_crit: {:.2e}".format(t_crit_yr))
-
+            exponent[exponent>1e14] = 1e14
             tbp = tbp0*(epxx/epxx0)**exponent # instability time, dimensionless
 
             tb_yr = tbp*Timescale/yr # instability time, years
 
             plt.figure(fig1)
-            plt.plot(h/1e3,tb_yr, linewidth=(temp/1273.15)**2, color=color)
+            plt.plot(h[h>80e3-critical_h]/1e3,tb_yr[h>80e3-critical_h], '-', linewidth=(root_T[-1]/1273.15)**2, color=color,alpha=0.25,)
+            plt.plot(h[h<=80e3-critical_h]/1e3,tb_yr[h<=80e3-critical_h], linewidth=(root_T[-1]/1273.15)**2, color=color)
+            plt.plot(80e3-critical_h, (80e3-critical_h)/v0/yr, 'o',color=color)
 
-            plt.figure(fig2)
-            plt.plot((h_crit+h)/1e3, tb_yr, linewidth=(temp/1273.15)**2, color=color)
-            print("\n")
+            if(f==1):
+                print("composition: "+composition)
+                print("max drho: {:.2f}".format(max_drho))
+                print("f: {:.2f}".format(f))
+                print("T: {:.2f} K".format(root_T[-1]))
+                print("B_eff: {:.2e}".format(B_eff))
+                print("tbp0: {:.2e}".format(tbp0))
+                print("exponent: {:.2e}--{:.2e}".format(min(exponent),max(exponent)))
+                print("\n")
 
         plt.figure(fig1)
         plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"pdf")), metadata=pdf_metadata)
         plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"png")))
         plt.close(fig1)
-        
-        plt.figure(fig2)
-        #plt.savefig(Path(output_path,"_instability_depth.Da{}.f{}.{}".format(_da,f,"pdf")), metadata=pdf_metadata)
-        #plt.savefig(Path(output_path,"_instability_depth.Da{}.f{}.{}".format(_da,f,"png")))
-        plt.close(fig2)
 
 ##########################################################
 # Summary plots for every composition & tectonic setting #
