@@ -102,8 +102,8 @@ if __name__ == '__main__':
     import argparse
     import os
 
-    parser = argparse.ArgumentParser(
-        description="""Generate rxmls for a given thermodynamic database.""")
+    parser = argparse.ArgumentParser(\
+        description="""Generate eclogitization rxml for a specified thermodynamic database (slb or slb21).""")
     parser.add_argument('-o', '--outdir', action='store', metavar='outdir',
                         default=os.path.join(os.path.pardir, 'database', 'reactions'), type=str, required=False,
                         help='Output directory for rxml files (defaults to ../database/reactions relative to script).')
