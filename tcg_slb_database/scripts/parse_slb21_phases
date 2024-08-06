@@ -60,7 +60,7 @@ changes = {
             '[0]=([Al]/2.0 - [Fe]/3.0 - [Ca]/3.0)',
             '[1]=[Fe]/3.0',
             '[2]=[Ca]/3.0',
-            '[3]=([Mg] - 3.0*([Al]/2.0 - [Fe]/3.0 - [Ca]/3.0))/4.0', 
+            '[3]=([Mg] - 3.0*([Al]/2.0 - [Fe]/3.0 - [Ca]/3.0) - [Na]/2.0)/4.0', 
             '[4]=[Na]/2.0'
         ]),
         ('W', [0.0, 21100.0, 21100.0, 22700.0, 22700.0, 61000.0, 22900.0, 22900.0, 60700.0, 71000.0]),
@@ -71,7 +71,8 @@ changes = {
             [3.0, [0.0, 1.0, 0.0, 0.0, 0.0]], #Fe
             [3.0, [0.0, 0.0, 0.0, 0.0, 0.666666666]], #Na
             [1.0, [0.0, 0.0, 0.0, 1.0, 0.0]], #Mg
-            [1.0, [1.0, 1.0, 1.0, 0.0, 1.0]], #Al
+            [1.0, [1.0, 1.0, 1.0, 0.0, 0.0]], #Al
+            [1.0, [0.0, 0.0, 0.0, 0.0, 1.0]], #Si
             [1.0, [0.0, 0.0, 0.0, 1.0, 1.0]], #Si
             [1.0, [1.0, 1.0, 1.0, 0.0, 0.0]]  #Al
         ]),
@@ -319,21 +320,19 @@ def parse_slb_phases(phase_path, endmember_path, output_file):
     df.to_csv(output_file, index=False, quotechar='"', columns=ph_headers+["W_V"])
 
 if __name__ == '__main__':
-    """
-    Takes as input the SLB 2011 phase definitions and SLB 2021 endmember definitions.
-    Using these, updates the phases to the 2021 version using the SLB GJI paper.
-    """
     import argparse
     import os
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(\
+        description= """Given inputs of the SLB 2011 phases and SLB 2021 endmembers,
+                        update the phases to the 2021 version from GJI paper.""")
     parser.add_argument('-p', '--phase_file', action='store', metavar='phase_file', 
                         type=str, required=True,
-                        help='Path to input CSV of SLB 2011 phases')
+                        help='Path to input CSV of SLB 2011 phases (slb_phases.csv)')
     parser.add_argument('-e', '--endmember_file', action='store', metavar='endmember_file', 
                         type=str, required=True,
-                        help='Path to input CSV of SLB 2021 endmembers')
+                        help='Path to input CSV of SLB 2021 endmembers (slb21_endmembers.csv)')
     parser.add_argument('-o', '--output_file', action='store', metavar='output_file', 
                     type=str, required=True,
-                    help='Path to output CSV of SLB 2021 phases')
+                    help='Path to output CSV of SLB 2021 phases (slb21_phases.csv)')
     args = parser.parse_args()
     df = parse_slb_phases(args.phase_file, args.endmember_file, args.output_file)
