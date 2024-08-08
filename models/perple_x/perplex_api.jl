@@ -1,3 +1,5 @@
+Collection = StatGeochem.Collection
+
 """
 MIT License
 
@@ -26,6 +28,7 @@ SOFTWARE.
 Set up a PerpleX calculation for a single bulk composition across an entire
 2d P-T space. P specified in bar and T in Kelvin.
 """
+
 function perplex_build_vertex(perplexdir::String, scratchdir::String, composition::Collection{Number},
         elements::Collection{String},
         P::NTuple{2,Number}=(280, 28000), T::NTuple{2,Number}=(273.15, 1500+273.15);
@@ -82,7 +85,7 @@ function perplex_build_vertex(perplexdir::String, scratchdir::String, compositio
     # Name, components, and basic options. P-T conditions.
     # default fluid_eos = 5: Holland and Powell (1998) "CORK" fluid equation of state
     elementstring = join(elements .* "\n")
-    write(fp,"$name\n$dataset\nperplex_option.dat\nn\n2\n$saturated_fluid\nn\nn\n$elementstring\nn\n2\n$(first(T))\n$(last(T))\n$(first(P))\n$(last(P))\n$(bymass)\n") # v6.8.7
+    write(fp,"$name\n$dataset\nperplex_option.dat\nn\n2\n$saturated_fluid\nn\n$elementstring\nn\n2\n$(first(T))\n$(last(T))\n$(first(P))\n$(last(P))\n$(bymass)\n") # v7.0.10
 
     # Whole-rock composition
     for i ∈ eachindex(composition)

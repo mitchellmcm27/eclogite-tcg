@@ -1,4 +1,6 @@
+using StatGeochem
 using JSON
+
 include("perplex_api.jl")
 
 # Absolute path to Perple_X installation
@@ -111,7 +113,7 @@ for name in comp_names
     oxide_comp = convert(Array{Number},comp["composition"])
     oxides = convert(Array{String},comp["elements"])
     if dataset == "stx21ver"
-        map!((s) -> uppercase(s), oxides)
+        oxides = map((s) -> uppercase(s), oxides)
     end
     composition_basis = comp["basis"]
 
@@ -124,12 +126,18 @@ for name in comp_names
     blkpath = joinpath(scratchdir,composition_name,composition_name*".blk")
     pseudosection_exists = isfile(blkpath)
 
+    excludes = join(phases_exclude,"\n")
+    if (length(phases_exclude)>0)
+        excludes *= "\n"
+    end
+    solution_phases = join(phases,"\n")*"\n"
+
     if force_pseudosection || !pseudosection_exists
         print("Solving pseudosection...\n")
         perplex_build_vertex(perplexdir, scratchdir, oxide_comp,oxides, P_range_2d, T_range_2d, 
             dataset=dataset*".dat", 
-            excludes=join(phases_exclude,"\n")*"\n",
-            solution_phases=join(phases,"\n")*"\n", 
+            excludes=excludes,
+            solution_phases=solution_phases, 
             composition_basis=composition_basis, 
             mode_basis=mode_basis, 
             name=composition_name,
