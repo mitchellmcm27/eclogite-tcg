@@ -16,7 +16,7 @@ RUN pip install --upgrade\
         matplotlib==3.7.5\
         sympy==1.12\
     && jill install 1.9 --upstream Official --confirm\
-    && julia -e 'using Pkg; Pkg.add(["JSON"]);'
+    && julia -e 'using Pkg; Pkg.add(["JSON","StatGeochem"]);'
 
 RUN cd /home/tcg/shared/eclogite-tcg\
     # Set permissions
