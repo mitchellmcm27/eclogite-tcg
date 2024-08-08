@@ -88,6 +88,7 @@ ggsave('plots/critical_by_composition_alt.png')
 
 mafic <- 'mackwell_1998_maryland_diabase'
 felsic <- 'sammon_2021_lower_crust'
+interm <- 'hacker_2015_md_xenolith'
 
 c1low <- dat %>%
   filter(composition == mafic) %>%
@@ -101,6 +102,7 @@ c1hi <- dat %>%
 
 c1x <- append(c1low$critical_temperature - 273.15, c1hi$critical_temperature - 273.15)
 c1y <- append(c1low$critical_depth, c1hi$critical_depth)
+c1y[is.na(c1y)] <-  95.e3
 
 c2low <- dat %>%
   filter(composition == felsic) %>%
@@ -113,9 +115,22 @@ c2hi <- dat %>%
 
 c2x <- append(c2low$critical_temperature - 273.15, c2hi$critical_temperature - 273.15)
 c2y <- append(c2low$critical_depth, c2hi$critical_depth)
-
-c1y[is.na(c1y)] <-  95.e3
 c2y[is.na(c2y)] <- 95.e3
+
+c3low <- dat %>%
+  filter(composition == interm) %>%
+  filter(Da == min(Da)) %>%
+  arrange(critical_temperature)
+
+c3hi <- dat %>%
+  filter(composition == interm) %>%
+  filter(Da == max(Da)) %>%
+  arrange(-critical_temperature)
+
+c3x <- append(c3low$critical_temperature - 273.15, c3hi$critical_temperature - 273.15)
+c3y <- append(c3low$critical_depth, c3hi$critical_depth)
+c3y[is.na(c3y)] <- 95.e3
+
 
 ggplot() +
   geom_polygon(aes(x = c1x, y = c1y / 1e3, fill = "Maryland diabase"), alpha =
@@ -201,14 +216,82 @@ ggplot() +
   theme(legend.position="none")
 
 ggsave(
-  'plots/critical_shaded_alt.pdf',
+  'plots/critical_shaded_ilc-md.pdf',
   device = cairo_pdf,
   width = 3.5,
   height = 3.1
 )
-ggsave('plots/critical_shaded_alt.png',
+ggsave('plots/critical_shaded_ilc-md.png',
        width = 3.5,
        height = 3.1)
+
+ggplot() +
+  geom_polygon(aes(x = c3x, y = c3y / 1e3, fill = "Median xenolith"), alpha =
+                 1) +
+  scale_fill_manual(values = c("#dfffee")) +
+  geom_line(
+    data = dat %>% filter(composition == interm &
+                            Da < 10000) %>% mutate(critical_depth = ifelse(
+                              is.na(critical_depth), NaN, critical_depth
+                            )),
+    aes(
+      x = critical_temperature - 273.15,
+      y = critical_depth / 1e3,
+      group = Da,
+      colour = "Median xenolith",
+      label = Da,
+      #alpha = log10(Da)
+    ),
+    show.legend = FALSE,
+    size = 0.25
+  ) +
+  geom_line(
+    data = dat %>% filter(composition == interm &
+                            Da == 1e4) %>% mutate(critical_depth = ifelse(
+                              is.na(critical_depth), 85.e3, critical_depth
+                            )),
+    aes(x = critical_temperature - 273.15, y = critical_depth / 1e3),
+    colour = "#1bcc75",
+    size=0.25
+  ) +
+  scale_colour_manual(values = c("#1ebe2d")) +
+  scale_alpha(range = c(0.3, 1.0)) +
+  scale_y_reverse(breaks = seq(30, 80, by = 10), expand = c(0, 0)) +
+  scale_x_continuous(
+    breaks = seq(0, 1000, by = 50),
+    expand = c(0, 0),
+    labels = ifelse(
+      seq(0, 1000, by = 50) %% 100 == 0,
+      format(seq(0, 1000, by = 50), digits = 1, nsmall = 0),
+      ""
+    )
+  ) +
+  coord_cartesian(ylim = c(80, 30)) +
+  annotation_logticks(
+    sides = "b",
+    size = 0.25,
+    short = unit(0.05, "cm"),
+    mid = unit(0.05, "cm"),
+    long = unit(0.1, "cm")
+  ) +
+  labs(
+    y = TeX("Stable depth (km)"),
+    x = TeX(T0string),
+    colour = TeX("log Da"),
+    fill = 'Composition'
+  ) +
+  theme(legend.position="none")
+
+ggsave(
+  'plots/critical_shaded_mgx.pdf',
+  device = cairo_pdf,
+  width = 3.5,
+  height = 3.1
+)
+ggsave('plots/critical_shaded_mgx.png',
+       width = 3.5,
+       height = 3.1)
+
 dat %>%
   mutate(critical_depth = ifelse(critical_depth > 80e3, NA, critical_depth)) %>%
   group_by(composition) %>%

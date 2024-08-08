@@ -65,7 +65,7 @@ lookup = {
     'q': ['Quartz', 'Si(1)O(2)']
 }
 
-def parse_file(file_path):
+def parse_file(file_path, output_file):
 
     result = []
     with open(Path(file_path), 'r') as file:
@@ -137,7 +137,7 @@ def parse_file(file_path):
             valsdict['eos'] = eos
             result.append(valsdict)
     
-    output = Path(re.sub(r'\.dat$', '.csv',file_path))
+    output = Path(output_file)
     fieldnames = ['name', 'formula', 'a0', 'n', 'v0', 'k00', 'k0p', 'theta0' , 'gamma0', 'q'  , 'refS' , 'T_r'  , 'V_r', 'TC0', 'VD', 'SD', 'abbrev', 'eos']
     with open(output, 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -147,9 +147,14 @@ def parse_file(file_path):
 if __name__ == "__main__":
     import argparse
     import os
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(\
+        description= """Parse an input Perple_X data file (stx11ver.dat or stx21ver.dat),
+                        and write the output to CSV.""")
     parser.add_argument('-i', '--input_file', action='store', metavar='input_file', 
                         type=str, required=True,
                         help='Path to stx[11/21]ver.dat')
+    parser.add_argument('-o', '--output_file', action='store', metavar='output_file', 
+                        type=str, required=True,
+                        help='Output csv file.')
     args = parser.parse_args()
-    parse_file(args.input_file)
+    parse_file(args.input_file, args.output_file)

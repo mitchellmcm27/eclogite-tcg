@@ -13,7 +13,7 @@ from scipy.integrate import solve_ivp
 from io import StringIO
 
 ### ------------ INPUTS -------------------
-reference= 'eclogite_test'
+reference= 'eclogite'
 rxn_name = 'eclogitization_2024_slb21_rx'
 
 # end time of reactions, change with -e argument
@@ -40,7 +40,7 @@ processes = mp.cpu_count()
 
 # ------------------------------------------
 
-outputPath = Path("figures",reference)
+outputPath = Path("figures")
 outputPath.mkdir(parents=True, exist_ok=True)
 
 pv = repr(sys.version_info.major)+'.'+repr(sys.version_info.minor)
@@ -334,7 +334,7 @@ if("Aki" in df.columns):
     y = df["Aki"]/100
     ax.plot(xvar,y,"-",linewidth=1,alpha=0.5,color="black")
 
-plt.savefig(Path(outputPath,"phases.png"))
+plt.savefig(Path(outputPath,reference+"_phases.png"))
 
 fig = plt.figure(figsize=(12,12))
 axi = fig.add_subplot(1,1,1)
@@ -381,4 +381,4 @@ for i, phase in enumerate(rxn.phases()):
 plt.xlim(xlimits)
 plt.legend(endmember_names)
 axi.set_ylabel("Endmember compositions (wt%)")
-plt.savefig(Path(outputPath,'endmembers_wtpc.png'))
+plt.savefig(Path(outputPath,reference+'_endmembers.png'))

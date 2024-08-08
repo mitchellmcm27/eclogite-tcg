@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <endmember_options>
   <name name="NaMajorite_slb21_em"/>
-  <formula name="Na(2)Al(2)Si(4)O(12)"/>
+  <formula name="Na(2)Mg(1)Si(5)O(12)"/>
   <reference>
     <string_value lines="1">generate_endmembers</string_value>
   </reference>
