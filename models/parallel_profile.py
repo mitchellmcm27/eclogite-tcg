@@ -194,7 +194,8 @@ phase_name_to_col_name = {
 hs = []
 
 for i, phase in enumerate(rxn.phases()):
-    h = ax.plot(xvar,phii_final[:,i],'-', linewidth=3,alpha=0.5)
+    pname = phase.name()
+    h = ax.plot(xvar,phii_final[:,i],'-', linewidth=3,alpha=0.5,label=pname.replace("_slb21_ph",""))
     hs.append(h)
 
 ax.set_xlabel(xlabel)
@@ -215,18 +216,18 @@ if(df is not None):
         y1 = phii_final[:,i]
         diff = y-y1
         ax.plot(xvar,y,"--",linewidth=1, color=h[-1].get_color())
-        if(i==0):
-            ax.legend(phase_names + ["(EQ)"])
 
-
-if(df is not None):
     if("O" in df.columns and "Olivine_slb21_ph" not in [p.name() for p in rxn.phases()]):
         y = df["O"]/100
-        ax.plot(xvar,y,"-",linewidth=1,alpha=0.5,color="black")
-    if("Aki" in df.columns):
+        ax.plot(xvar,y,"--",linewidth=1,alpha=0.5,color="olive",label="Olivine")
+    if("Sp" in df.columns and "Spinel_slb21_ph" not in [p.name() for p in rxn.phases()]):
+        y = df["Sp"]/100
+        ax.plot(xvar,y,"--",linewidth=1,alpha=0.5,color="k",label="Spinel")
+    if("Aki" in df.columns and "Akimotoite_slb21_ph" not in [p.name() for p in rxn.phases()]):
         y = df["Aki"]/100
-        ax.plot(xvar,y,"-",linewidth=1,alpha=0.5,color="black")
+        ax.plot(xvar,y,"--",linewidth=1,alpha=0.5,color="b",label="Aki")
 
+ax.legend()
 #plt.suptitle(composition.replace("_", " ").capitalize())
 plt.savefig(Path(outputPath,"phases.png"))
 
