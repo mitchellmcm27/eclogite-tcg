@@ -30,8 +30,6 @@ class bcolors:
 class TectonicSetting(TypedDict):
     setting:str
     L0:float
-    z0:float
-    z1:float
     As:float
     hr0:float
     k:float
@@ -88,12 +86,14 @@ phasetol = 1.e-5 # default 1.e-2
 
 # regularization parameter for compositions
 eps = 1.e-5 # default 1.e-2
-# these numbers seem to work very well with eps = 1e-5??
-rtol = 1.e-5 # relative tolerance, default 1e-5
-atol = 1.e-9 # absolute tolerance, default 1e-9
+# these seem to work well with eps = 1e-5
+rtol = 1.e-5 # relative tolerance
+atol = 1.e-9 # absolute tolerance
 
+z0  = 30. * km # initial Moho depth
 v0 = 1.0 * mm/yr # Moho descent rate, m/s
-h0 = 50. * km # thicken the crust by 50 km
+h0 = 50. * km # total crustal thickening
+z1 = z0 + h0 # final Moho depth
 t0 = h0 / v0 # seconds
 Tr = 5500.+273.15 # reaction's characteristic temperature (T_r)
 crustal_rho = 2780.
@@ -132,8 +132,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting": "a",
         "L0": 55.e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 2.0e-6,
         "hr0": 13.e3,
         "k": 3.0,
@@ -143,8 +141,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting": "b",
         "L0": 60.e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.95e-6,
         "hr0": 12.5e3,
         "k": 3.0,
@@ -154,8 +150,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting": "c",
         "L0": 65.5e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.9e-6,
         "hr0": 12.e3,
         "k": 3.0,
@@ -165,8 +159,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting": "d",
         "L0": 71.5e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.85e-6,
         "hr0": 11.5e3,
         "k": 3.0,
@@ -176,8 +168,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting": "e",
         "L0": 78.e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.8e-6,
         "hr0": 11.0e3,
         "k": 3.0,
@@ -187,8 +177,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting": "f",
         "L0": 85.e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.75e-6,
         "hr0": 10.5e3,
         "k": 3.0,
@@ -198,8 +186,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting": "g",
         "L0": 92.5e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.7e-6,
         "hr0": 10.e3,
         "k": 3.0,
@@ -209,8 +195,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting":"h",
         "L0": 102.5e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.65e-6,
         "hr0": 9.5e3,
         "k": 3.0,
@@ -220,8 +204,6 @@ tectonic_settings: List[TectonicSetting] = [
     {
         "setting":"i",
         "L0": 111.e3,
-        "z0": 30.e3,
-        "z1": 80.e3,
         "As": 1.6e-6,
         "hr0": 9.e3,
         "k": 3.0,
@@ -299,10 +281,8 @@ geotherm_latex_table = {
 }
 
 for num_setting, setting in enumerate(tectonic_settings):
-    z0 = setting["z0"]
     L0 = setting["L0"]
     shortening = 1
-    z1 = setting["z1"]
     hr0 = setting["hr0"]
     conductivity = setting["k"]
     Ts = setting["Ts"]
@@ -396,7 +376,7 @@ plt.savefig(Path(output_path,"{}.{}".format("_geotherms", "pdf")), metadata=pdf_
 plt.savefig(Path(output_path,"{}.{}".format("_geotherms", "png")))
 
 ax1.set_ylim([0,120])
-ax1.set_xlim([150,1100])
+ax1.set_xlim([150,1300])
 plt.savefig(Path(output_path,"{}.{}".format("_geotherms_inverted", "pdf")), metadata=pdf_metadata)
 plt.savefig(Path(output_path,"{}.{}".format("_geotherms_inverted", "png")))
 
@@ -522,13 +502,11 @@ def get_initial_state(scenario:TectonicSetting)->InputScenario:
 
     composition_name = scenario['composition']
     L0 = scenario["L0"]
-    z0 = scenario["z0"]
     As = scenario["As"]
     hr0 = scenario["hr0"]
     k = scenario["k"]
     Ts = scenario["Ts"]
     Tlab = scenario["Tlab"]
-    z1 = scenario["z1"]
 
     # Initial temperature
     T0, qs0 = geotherm_steady(
@@ -708,10 +686,8 @@ def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
 def run_experiment(scenario:InputScenario)->OutputScenario:
     Da = scenario["Da"]
     L0 = scenario["L0"]
-    z0 = scenario["z0"]
     As = scenario["As"]
     hr0 = scenario["hr0"]
-    z1 = scenario["z1"]
     T0 = scenario["T0"]
     P0 = scenario["P0"] 
     cik0 = scenario["cik0"]
@@ -726,7 +702,7 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     # Set reaction's characteristic Arrhenius temperature (T_r)
     rxn.set_parameter("T0",Tr)
 
-    scale= {"T":T0, "P":P0, "rho":rho0, "h":(z1-z0)}
+    scale= {"T":T0, "P":P0, "rho":rho0, "h":h0}
 
     # Set up vector of initial conditions
     u0 = get_u0(Fi0,cik0)
@@ -821,8 +797,6 @@ for out in scenarios_out:
     T = out["T"] # K
     t = out["time"] # unitless
     P = out["P"] # bar
-    z1 = out["z1"]
-    z0 = out["z0"]
     
     rho_pyrolite = ipyrolite((T, P/1e4))/10
 
@@ -835,8 +809,8 @@ for out in scenarios_out:
         critical_indices = [i for i,r in enumerate(rho) if r > rho_pyrolite[i]]
         if len(critical_indices) == 0:
             # never goes critical
-            critical_depth = 85.e3 # approx. coesite transition?, can change this later
-            critical_pressure = 30e3 # bar
+            critical_depth = 108.e3 # approx. coesite transition?, can change this later
+            critical_pressure = 30.e3 # bar
             critical_temperature = T[-1] # K
             critical_time = end_t+1
         elif len(critical_indices) == len(rho):
@@ -854,8 +828,8 @@ for out in scenarios_out:
             critical_temperature = T[critical_index] # K
             critical_time = t[critical_index]
     else:
-        critical_depth = 85.e3 # approx. coesite transition?, can change this later
-        critical_pressure = 30e3 # bar
+        critical_depth = 108.e3 # approx. coesite transition?, can change this later
+        critical_pressure = 30.e3 # bar
         critical_temperature = T[-1] # K
         critical_time = end_t+1
     out["critical_depth"] = critical_depth
@@ -956,7 +930,7 @@ legend2 = ax.legend(handles,
                     loc="upper left",
                     bbox_to_anchor=(1.04,1),
                     title="Da")
-ax.set_ylim(top=30, bottom=85)
+ax.set_ylim(top=z0/1e3, bottom=z1/1e3+5)
 plt.xlabel("Temperature (°C)")
 plt.ylabel("Critical depth (km)")
 plt.savefig(Path(output_path,"{}.{}".format("_critical", "pdf")), metadata=pdf_metadata, bbox_extra_artists=(legend1,legend2), bbox_inches='tight')
@@ -1111,9 +1085,9 @@ for f in fluid_weakening:
             tb_yr = tbp*Timescale/yr # instability time, years
 
             plt.figure(fig1)
-            plt.plot(h[h>80e3-critical_h]/1e3,tb_yr[h>80e3-critical_h], '-', linewidth=(root_T[-1]/1273.15)**2, color=color,alpha=0.25,)
-            plt.plot(h[h<=80e3-critical_h]/1e3,tb_yr[h<=80e3-critical_h], linewidth=(root_T[-1]/1273.15)**2, color=color)
-            plt.plot(80e3-critical_h, (80e3-critical_h)/v0/yr, 'o',color=color)
+            plt.plot(h[h>z1-critical_h]/1e3,tb_yr[h>z1-critical_h], '-', linewidth=(root_T[-1]/1273.15)**2, color=color,alpha=0.25,)
+            plt.plot(h[h<=z1-critical_h]/1e3,tb_yr[h<=z1-critical_h], linewidth=(root_T[-1]/1273.15)**2, color=color)
+            plt.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)
 
             if(f==0.25 and _da==3000):
                 print("composition: "+composition)
@@ -1149,8 +1123,6 @@ for composition in compositions:
         P = base["P"]
         rho0 = base["rho0"]
         L0 = base["L0"]
-        z0 = base["z0"]
-        z1 = base["z1"]
 
         _Das = [o["Da"] for o in outs_c]
         
@@ -1206,7 +1178,7 @@ for composition in compositions:
             ax = axes[phase]
             cmap = cmaps[i]
             ax.set_prop_cycle(plt.cycler("color", cmap(np.linspace(0.2, 1, num_lines))))
-            ax.set_xlim([0., 80.])
+            ax.set_xlim([0., z1/1.e3])
             ax.set_ylabel(None)
             ax.set_xlabel("{} (wt%)".format(phase))
             ax.set_xticks(np.arange(0,110,10))
@@ -1271,7 +1243,7 @@ for tectonic_setting in tectonic_settings:
         [ax.invert_yaxis() for label,ax in axes.items()]
         [ax.set_xlim([2.8,3.5]) for label,ax in axes.items()]
         [ax.set_xticks([2.8,3.0,3.2,3.4]) for label,ax in axes.items()]
-        [ax.set_ylim([80,30]) for label,ax in axes.items()]
+        [ax.set_ylim([z1/1.e3,z0/1.e3]) for label,ax in axes.items()]
         [ax.tick_params(width=0.4) for label,ax in axes.items()]
         for axis in ['top','bottom','left','right']:
             [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]

@@ -154,20 +154,6 @@ function perplex_werami_profile(perplexdir::String, scratchdir::String, P::NTupl
     system("sed -e \"s/^  *//\" -e \"s/  *\$//\" -i.backup $(prefix)$(name)_1.tab")
     # Merge delimiters
     system("sed -e \"s/  */ /g\" -i.backup $(prefix)$(name)_1.tab")
-
-    # Read results and return them if possible
-    result = importas==:Dict ? Dict() : ()
-    try
-        # Read data as an Array{Any}
-        data = readdlm("$(prefix)$(name)_1.tab", ' ', skipstart=8)
-        # Convert to a dictionary
-        result = elementify(data, sumduplicates=false, importas=importas)
-    catch e
-        showerror(stdout, e)
-        # Return empty dictionary if file doesn't exist
-        @warn "$(prefix)$(name)_1.tab could not be parsed, perplex may not have run"
-    end
-    return result
 end
 
 export perplex_werami_profile
@@ -195,20 +181,6 @@ function perplex_werami_rho(perplexdir::String, scratchdir::String;
     system("sed -e \"s/^  *//\" -e \"s/  *\$//\" -i.backup $(prefix)$(name)_2.tab")
     # Merge delimiters
     system("sed -e \"s/  */ /g\" -i.backup $(prefix)$(name)_2.tab")
-
-    # Read results and return them if possible
-    result = importas==:Dict ? Dict() : ()
-    try
-        # Read data as an Array{Any}
-        data = readdlm("$(prefix)$(name)_2.tab", ' ', skipstart=12)
-        # Convert to a dictionary
-        result = elementify(data, sumduplicates=false, importas=importas)
-    catch e
-        showerror(stdout, e)
-        # Return empty dictionary if file doesn't exist
-        @warn "$(prefix)$(name)_2.tab could not be parsed, perplex may not have run"
-    end
-    return result
 end
 
 export perplex_werami_rho
@@ -236,20 +208,5 @@ function perplex_werami_point(perplexdir::String, scratchdir::String, P::Number,
 
     # Extract Perplex results with werami
     system("cd $prefix; $werami < werami.bat > werami.log")
-
-    # Read results and return them if possible
-    data = ""
-    try
-        # Read entire output file as a string
-        fp = open("$(prefix)$(name)_1.txt", "r")
-        data = read(fp, String)
-        close(fp)
-    catch e
-        showerror(stdout, e)
-        # Return empty string if file doesn't exist
-        @warn "$(prefix)$(name)_1.txt could not be parsed, perplex may not have run"
-
-    end
-    return data
 end
 export perplex_werami_point

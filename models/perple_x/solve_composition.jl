@@ -10,10 +10,10 @@ perplexdir = joinpath(resourcepath,"perplex-stable")
 mode_basis = "vol"
 
 T_range_2d = (300+273.15, 1300+273.15) # Kelvin
-P_range_2d = (5000, 25000) # bar
+P_range_2d = (5000, 30000) # bar
 
 T_range_1d = (650+273.15, 850+273.15) # Kelvin
-P_range_1d = (5000, 25000) # bar
+P_range_1d = (5000, 30000) # bar
 
 T_point = 900+273.15 # K
 P_point = 2.0e4 # bar
@@ -147,12 +147,12 @@ for name in comp_names
     end
 
     print("Extracting profile...\n")
-    modes = perplex_werami_profile(perplexdir, scratchdir, P_range_1d, T_range_1d,name=composition_name)
+    perplex_werami_profile(perplexdir, scratchdir, P_range_1d, T_range_1d,name=composition_name)
 
     print("Extracting density grid...\n")
-    modes = perplex_werami_rho(perplexdir, scratchdir, include_fluid=include_fluid, name=composition_name)
+    perplex_werami_rho(perplexdir, scratchdir, include_fluid=include_fluid, name=composition_name)
 
     print("Extracting point...\n")
-    point = perplex_werami_point(perplexdir,scratchdir,P_point,T_point,name=composition_name)
+    perplex_werami_point(perplexdir,scratchdir,P_point,T_point,name=composition_name)
     print(point)
 end
