@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from multiprocessing import Pool
 import multiprocessing as mp
-from python.perplex import ppx_rho_interpolator, ppx_point_composition
+from python.perplex import model_pyrolite_rho_gcc, ppx_point_composition
 from scipy.integrate import solve_ivp
 from geotherm_steady import geotherm_steady
 import csv
@@ -99,6 +99,7 @@ Tr = 5500.+273.15 # reaction's characteristic temperature (T_r)
 crustal_rho = 2780.
 gravity = 9.81
 Da_eq = 1e6
+critical_rho = 3350. # mantle asthenosphere pyrolite
 
 # multiprocessing
 num_processes =  mp.cpu_count()
@@ -109,10 +110,6 @@ pdf_metadata = {'CreationDate': None}
 # Damkoehler numbers
 Das = [1e-2, 3e-2, 1e-1, 3e-1, 1e0, 3e0, 1e1, 3e1, 1e2, 3e2, 1e3, 3e3, 1e4, 3e4, 1e5, 3e5, 1e6]
 print(Das)
-
-
-# Account for dense oxides not included in SLB database
-oxide_density_10gcc = 0.3
 
 # default end time (scaled) is 1
 end_t = 1.
@@ -431,9 +428,6 @@ for setting in tectonic_settings:
             scenario["composition"] = comp
             scenarios.append(scenario)
 
-# Get equilibrium mantle densities
-ipyrolite = ppx_rho_interpolator("xu_2008_pyrolite")
-
 # Get reaction/phase/endmember parameters
 rxn = get_reaction(rxn_name)
 phase_names, endmember_names = get_names(rxn)
@@ -735,10 +729,10 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
 
     # Back-calculate depth from pressure
     depth_m = (P*1e5) / gravity / crustal_rho
-    
+ 
     scenario["T"] = T # K
     scenario["P"] = P # bar
-    scenario["rho"] = np.asarray(rho) + oxide_density_10gcc/10.0 # g/cm3
+    scenario["rho"] = np.asarray(rho) # g/cm3
     scenario["Fi"] = Fi_times # phase mass fractions
     scenario["cik"] = cik_times # endmember mass fractions
     scenario["Xik"] = np.asarray([rxn.C_to_X(c) for c in Cs_times], dtype="object") # endmember mol. fractions
@@ -794,12 +788,11 @@ for out in scenarios_out:
     # Process each scenario output
     rho = np.array(out["rho"]) # g/cm3
     depth_m = out["z"]
+    depth_lab = depth_m/z0 * out["L0"]
     T = out["T"] # K
     t = out["time"] # unitless
     P = out["P"] # bar
-    
-    rho_pyrolite = ipyrolite((T, P/1e4))/10
-
+    rho_pyrolite = model_pyrolite_rho_gcc(T,P)
     max_rho = np.nanmax(rho)
     max_rho_py = np.nanmax(rho_pyrolite)
 
@@ -809,10 +802,10 @@ for out in scenarios_out:
         critical_indices = [i for i,r in enumerate(rho) if r > rho_pyrolite[i]]
         if len(critical_indices) == 0:
             # never goes critical
-            critical_depth = 108.e3 # approx. coesite transition?, can change this later
-            critical_pressure = 30.e3 # bar
-            critical_temperature = T[-1] # K
-            critical_time = end_t+1
+            critical_depth = np.nan # 108.e3 # approx. coesite transition
+            critical_pressure = np.nan # 30.e3 # bar
+            critical_temperature = np.nan # T[-1] # K
+            critical_time = np.nan # end_t+1
         elif len(critical_indices) == len(rho):
             # always critical
             critical_depth = depth_m[0]
@@ -828,10 +821,10 @@ for out in scenarios_out:
             critical_temperature = T[critical_index] # K
             critical_time = t[critical_index]
     else:
-        critical_depth = 108.e3 # approx. coesite transition?, can change this later
-        critical_pressure = 30.e3 # bar
-        critical_temperature = T[-1] # K
-        critical_time = end_t+1
+        critical_depth = np.nan # 108.e3 # approx. coesite transition
+        critical_pressure = np.nan # 30.e3 # bar
+        critical_temperature = np.nan # T[-1] # K
+        critical_time = np.nan # end_t+1
     out["critical_depth"] = critical_depth
     out["critical_pressure"] = critical_pressure
     out["critical_temperature"] = critical_temperature
@@ -879,64 +872,6 @@ for out in scenarios_out:
         bin_means = [dens_rate_masked[digitized_t == i].mean() for i in range(len(bins))]
         out["max_densification_rate_"+bin_width_string] = np.nanmax(bin_means)
 
-###########################
-# Plot max. stable depths #
-###########################
-
-selected_compositions = compositions
-selected_outputs = [o for o in scenarios_out if o["composition"] in selected_compositions]
-
-depths = np.asarray([o['critical_depth'] for o in selected_outputs])
-temps = np.asarray([o["critical_temperature"] for o in selected_outputs])
-
-das = np.asarray([o["Da"] for o in selected_outputs])
-
-def da2size(d):
-    return ((1 - (d-np.min(d))/(np.max(d)-np.min(d)))*6 + 3)**2
-def size2da(s):
-    return -((np.sqrt(s)-3)/6 - 1)*(np.max(das)-np.min(das))+np.min(das)
-
-sizes = da2size(das)
-
-comps = [o["composition"] for o in selected_outputs]
-codes = [selected_compositions.index(c) for c in comps]
-
-fig = plt.figure(figsize=(5,7))
-s = plt.scatter(temps-273.15, depths/1e3, s=sizes, c=codes, cmap="tab10", alpha=0.5)
-
-# produce a legend with the unique colors from the scatter
-ax = plt.gca()
-handles, labels = s.legend_elements(
-    prop="colors",
-    #func=lambda x: comps[int(x)].capitalize().replace("_", " ")
-)
-legend1 = ax.legend(handles,
-                    [c.capitalize().replace("_"," ") for c in selected_compositions],
-                    loc="lower left",
-                    bbox_to_anchor=(1.04,0),
-                    title="$X_{{bulk}}$")
-
-ax.add_artist(legend1)
-# produce a legend with a cross-section of sizes from the scatter
-handles, labels = s.legend_elements(
-    prop="sizes",
-    alpha=0.6,
-    fmt="{x:.0f}",
-    func=size2da
-)
-
-legend2 = ax.legend(handles, 
-                    labels, 
-                    loc="upper left",
-                    bbox_to_anchor=(1.04,1),
-                    title="Da")
-ax.set_ylim(top=z0/1e3, bottom=z1/1e3+5)
-plt.xlabel("Temperature (°C)")
-plt.ylabel("Critical depth (km)")
-plt.savefig(Path(output_path,"{}.{}".format("_critical", "pdf")), metadata=pdf_metadata, bbox_extra_artists=(legend1,legend2), bbox_inches='tight')
-plt.savefig(Path(output_path,"{}.{}".format("_critical", "png")),bbox_extra_artists=(legend1,legend2), bbox_inches='tight')
-plt.close(fig)
-
 #############################
 # Write summary data to CSV #
 #############################
@@ -977,6 +912,51 @@ with open(Path(output_path,'_summary.csv'),'w') as csvfile:
     for out in scenarios_out:
         writer.writerow(out)
     print("wrote CSV")
+
+###########################
+# Plot max. stable depths #
+###########################
+
+selected_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
+
+fig = plt.figure(figsize=(20,5))
+axes = fig.subplot_mosaic([selected_compositions])
+
+# Invert y axis because it represents depth
+[ax.invert_yaxis() for label,ax in axes.items()]
+[ax.set_ylim([z1/1.e3,z0/1.e3]) for label,ax in axes.items()]
+[ax.tick_params(width=0.4) for label,ax in axes.items()]
+for axis in ['top','bottom','left','right']:
+    [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
+
+[ax.set_xlabel("Temperature (°C)")for label,ax in axes.items()]
+[ax.set_ylabel("Critical depth (km)")for label,ax in axes.items()]
+
+for comp in selected_compositions:
+    ax = axes[comp]
+
+    if comp=='mackwell_1998_maryland_diabase':
+        color='#00adee' # dodgerblue
+    elif comp=='hacker_2015_md_xenolith':
+        color='#3cb371' # mediumseagreen
+    elif comp=='sammon_2021_lower_crust':
+        color='#be1e2d' # indianred
+    elif comp=='sammon_2021_deep_crust':
+        color='#f6921e' # goldenrod
+    else:
+        color='black'
+
+    for _da in Das:
+        outs_c_da = sorted([out for out in scenarios_out if (out["composition"] == comp) and out["Da"]==_da], key=lambda out: out["setting"],reverse=True)
+        crit_T = np.array([o["critical_temperature"] for o in outs_c_da])
+        crit_z = np.array([o["critical_depth"] for o in outs_c_da])
+        s = ax.plot(crit_T-273.15, crit_z/1.e3,color=color,linewidth=0.5)
+        for obj in outs_c_da:
+            ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#333333',linewidth=0.25,label=obj['setting'])
+
+plt.savefig(Path(output_path,"{}.{}".format("_critical", "pdf")), metadata=pdf_metadata)
+plt.savefig(Path(output_path,"{}.{}".format("_critical", "png")))
+plt.close(fig)
 
 #############################
 # Rayleigh--Taylor analysis #
@@ -1020,7 +1000,7 @@ for f in fluid_weakening:
             max_temp = obj["T1"]
             Da = obj["Da"]
             critical_h = obj["critical_depth"]
-            rho_pyrolite=np.array(ipyrolite((T, P/1e4)))*100. # kg/m3
+            rho_pyrolite = model_pyrolite_rho_gcc(T,P)*1000. # k/m3
 
             densities = np.array(obj["rho"]) * 1000.
             drho = densities - rho_pyrolite
@@ -1154,8 +1134,7 @@ for composition in compositions:
             ax = axes["rho"]
             ax.plot(obj["rho"], obj["z"])
 
-        rho_pyrolite=ipyrolite((T, P/1e4))
-
+        rho_pyrolite = model_pyrolite_rho_gcc(T,P)
         ax.plot(rho_pyrolite/10, outs_c[0]["z"], "r:")
         ax.legend(["$Da = ${:.1e}".format(d) for d in _Das] +  (["pyrolite"]), loc="upper right")
 
@@ -1248,7 +1227,7 @@ for tectonic_setting in tectonic_settings:
         for axis in ['top','bottom','left','right']:
             [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
   
-        rho_pyrolite=ipyrolite((T, P/1e4))/10
+        rho_pyrolite=model_pyrolite_rho_gcc(T,P)
 
         for i, obj in enumerate(outs_c):
             ax = axes[obj["composition"]]
