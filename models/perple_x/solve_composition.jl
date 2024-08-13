@@ -9,17 +9,6 @@ perplexdir = joinpath(resourcepath,"perplex-stable")
 
 mode_basis = "vol"
 
-T_range_2d = (300+273.15, 1300+273.15) # Kelvin
-P_range_2d = (5000, 30000) # bar
-
-T_range_1d = (650+273.15, 850+273.15) # Kelvin
-P_range_1d = (5000, 30000) # bar
-
-T_point = 900+273.15 # K
-P_point = 2.0e4 # bar
-
-T_surf = 273.15
-
 force_pseudosection = false
 
 args = ARGS
@@ -40,6 +29,7 @@ else
 end
 
 for name in comp_names
+    
     composition_name = name
     comp = compositions[name]
     dataset = comp["dataset"] isa String ? comp["dataset"] : "stx21ver"
@@ -115,6 +105,27 @@ for name in comp_names
     if dataset == "stx21ver"
         oxides = map((s) -> uppercase(s), oxides)
     end
+
+    T_range_1d = (650+273.15, 850+273.15) # Kelvin
+    P_range_1d = (5000, 30000) # bar
+
+    T_point = 900+273.15 # K
+    P_point = 2.0e4 # bar
+
+    if occursin("pyrolite",name)
+        # mantle
+        T_range_2d = (300+273.15, 1400+273.15) # Kelvin
+        P_range_2d = (5000, 100000) # up to 100 kbar (10 Gpa)
+        xnodes=40
+        ynodes=120
+    else
+        # assume crust
+        T_range_2d = (300+273.15, 1300+273.15) # Kelvin
+        P_range_2d = (5000, 30000) # bar
+        xnodes=40
+        ynodes=40
+    end
+
     composition_basis = comp["basis"]
 
     println(sum(oxide_comp))
@@ -134,8 +145,10 @@ for name in comp_names
 
     if force_pseudosection || !pseudosection_exists
         print("Solving pseudosection...\n")
-        perplex_build_vertex(perplexdir, scratchdir, oxide_comp,oxides, P_range_2d, T_range_2d, 
-            dataset=dataset*".dat", 
+        perplex_build_vertex(perplexdir, scratchdir, oxide_comp,oxides, P_range_2d, T_range_2d,
+            dataset=dataset*".dat",
+            xnodes=xnodes,
+            ynodes=ynodes,
             excludes=excludes,
             solution_phases=solution_phases, 
             composition_basis=composition_basis, 
@@ -154,5 +167,4 @@ for name in comp_names
 
     print("Extracting point...\n")
     perplex_werami_point(perplexdir,scratchdir,P_point,T_point,name=composition_name)
-    print(point)
 end
