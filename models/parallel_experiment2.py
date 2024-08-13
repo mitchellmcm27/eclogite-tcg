@@ -919,7 +919,7 @@ with open(Path(output_path,'_summary.csv'),'w') as csvfile:
 
 selected_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
 
-fig = plt.figure(figsize=(20,5))
+fig = plt.figure(figsize=(20,7.5))
 axes = fig.subplot_mosaic([selected_compositions])
 
 # Invert y axis because it represents depth
@@ -950,9 +950,9 @@ for comp in selected_compositions:
         outs_c_da = sorted([out for out in scenarios_out if (out["composition"] == comp) and out["Da"]==_da], key=lambda out: out["setting"],reverse=True)
         crit_T = np.array([o["critical_temperature"] for o in outs_c_da])
         crit_z = np.array([o["critical_depth"] for o in outs_c_da])
-        s = ax.plot(crit_T-273.15, crit_z/1.e3,color=color,linewidth=0.5)
+        s = ax.plot(crit_T-273.15, crit_z/1.e3,color=color,linewidth=0.75)
         for obj in outs_c_da:
-            ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#333333',linewidth=0.25,label=obj['setting'])
+            ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#888888',linewidth=0.25, label=obj['setting'])
 
 plt.savefig(Path(output_path,"{}.{}".format("_critical", "pdf")), metadata=pdf_metadata)
 plt.savefig(Path(output_path,"{}.{}".format("_critical", "png")))
@@ -976,7 +976,7 @@ for f in fluid_weakening:
         v0_yr = v0 * yr # converted from m/s to m/yr
         plt.plot(np.logspace(5,8,num=200)*v0_yr/1e3, np.logspace(5,8,num=200),'k-')
         plt.plot(np.logspace(5,8,num=200)*0.7*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
-        plt.plot(np.logspace(5,8,num=200)*1.3*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
+        plt.plot(np.logspace(5,8,num=200)*1.5*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
         plt.gca().set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
 
         outs_c = sorted([o for o in scenarios_out 
@@ -1065,8 +1065,8 @@ for f in fluid_weakening:
             tb_yr = tbp*Timescale/yr # instability time, years
 
             plt.figure(fig1)
-            plt.plot(h[h>z1-critical_h]/1e3,tb_yr[h>z1-critical_h], '-', linewidth=(root_T[-1]/1273.15)**2, color=color,alpha=0.25,)
-            plt.plot(h[h<=z1-critical_h]/1e3,tb_yr[h<=z1-critical_h], linewidth=(root_T[-1]/1273.15)**2, color=color)
+            plt.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], '-', linewidth=(root_T[-1]/1273.15)**2, color=color,alpha=0.25,)
+            plt.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(root_T[-1]/1273.15)**2, color=color)
             plt.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)
 
             if(f==0.25 and _da==3000):
