@@ -69,7 +69,7 @@ Gt
 NaAl      
 end solution phase list
 
-   30000.0        1573.15        0.00000        0.00000        0.00000     max p, t, xco2, mu_1, mu_2
+   100000.        1673.15        0.00000        0.00000        0.00000     max p, t, xco2, mu_1, mu_2
    5000.00        573.150        0.00000        0.00000        0.00000     min p, t, xco2, mu_1, mu_2
    0.00000        0.00000        0.00000        0.00000        0.00000     unused place holder post 06
 
