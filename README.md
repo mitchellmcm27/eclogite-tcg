@@ -63,7 +63,7 @@ The `scripts/generate_reactions` and `scripts/generate_reactions_eclogite` files
 Model calculations are provided as Python scripts in the **models** directory as follows:
 
 - **parallel_experiment2.py** runs the reactive geodynamic model of crustal thickening.
-- **parallel_pd.py** generates a (_T_,_P_) pseudosection for comparing reactive density with equilibrium (Perple_X).
+- **parallel_pd.py** generates a (_T_,_P_) pseudosection and plots reactive density compared with equilibrium (Perple_X) and mantle.
 - **parallel_profile.py** generates a 1-d profile through (_T_,_P_)-space for comparing reactive phases equilibrium.
 - **damkohler-fit.ipynb** shows how Damkohler number is fit to empirical data.
 
@@ -107,7 +107,7 @@ The script **solve_composition.jl** reads **compositions.json** file and passes 
 
 To generate equilibrium data for a composition:
 
-- Add the oxide percentages to **models/perple_x/compositions.json** file, making sure to use the same format as the existing entries.
+- Add major element oxide percentages to **models/perple_x/compositions.json** file, making sure to use the same format as the existing entries.
 - The dictionary key for each composition object must be unique, as it will be used to refer to the composition throughout the codebase.
 - Within the **perple_x** directory, run `julia solve_composition.jl [name]`, where `[name]` is the composition's dictionary key in **compositions.json** (e.g., `sammon_2021_lower_crust`).
 - Because a pseudosection calculation in Perple_X (the **vertex** program) can take some time, **vertex** only runs if its output data don't already exist. If **vertex** data need to be updated, use the `-f` argument with `solve_composition.jl` to force Perple_X to re-calculate everything from scratch.
