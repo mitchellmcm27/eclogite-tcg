@@ -7,6 +7,15 @@ import pandas as pd
 import numpy as np
 from io import StringIO
 
+def model_pyrolite_rho_gcc(T,P):
+    # Li et al. 2022, DOI: 10.1111/jmg.12679
+    T0_pyrolite = 298. # K
+    P0_pyrolite = 0.001 # kbar
+    alpha = 3.e-5 # 1/K
+    beta = 1e-3 # 1/bar
+    rho_pyrolite = 3.35*(1-alpha*(T-T0_pyrolite))*(1+beta*(P/1e3-P0_pyrolite))
+    return rho_pyrolite
+
 def ppx_rho_interpolator(name, unit="100kg/m3"):
     filepath = "perple_x/output/{}/{}_2.tab".format(name,name)
     try:
