@@ -194,7 +194,7 @@
         ]
     },
     "rudnick_2014_lower_crust": {
-        "comment": "Rudnick & Gao 2014. Grabbed normalized oxides from Sammon & McDonough 2021 (Table S3).",
+        "comment": "Rudnick & Gao 2014. Values are from Sammon & McDonough 2021 (Table S3).",
         "basis": "wt",
         "dataset": "stx21ver",
         "elements": [
@@ -490,6 +490,26 @@
             48.7900,
             14.3400,
             3.75000
+        ]
+    },
+    "workman_2005_dmm": {
+        "basis": "mol",
+        "dataset": "stx21ver",
+        "elements": [
+            "Na2O",
+            "MgO",
+            "Al2O3",
+            "SiO2",
+            "CaO",
+            "FeO"
+        ],
+        "composition": [
+            0.13,
+            38.73,
+            3.98,
+            44.71,
+            3.17,
+            8.18
         ]
     },
     "xu_2008_pyrolite": {
