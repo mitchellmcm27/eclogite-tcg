@@ -1221,7 +1221,7 @@ for tectonic_setting in tectonic_settings:
             ax = axes[obj["composition"]]
             color=color_by_composition.get(obj["composition"],"black")
             linewidth = 0.5 if obj["Da"] == np.max(Das) else 0.25
-
+            alpha = 1 if obj["Da"] == np.max(Das) else 0.8
             ax.plot(obj["rho"], obj["z"]/1e3, color=color,linewidth=linewidth)
 
             if obj["composition"] != selected_compositions[0]:
@@ -1229,7 +1229,7 @@ for tectonic_setting in tectonic_settings:
                 ax.set_yticklabels([])
             
             if obj["Da"] == 1:
-                ax.plot(rho_pyrolite, obj["z"]/1e3, "k", dashes=[6,2], linewidth=0.5)
+                ax.plot(rho_pyrolite, obj["z"]/1e3, "k", dashes=[10,4], linewidth=0.35)
 
         plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"pdf")), metadata=pdf_metadata)
         plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"png")))
