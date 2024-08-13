@@ -99,7 +99,6 @@ Tr = 5500.+273.15 # reaction's characteristic temperature (T_r)
 crustal_rho = 2780.
 gravity = 9.81
 Da_eq = 1e6
-critical_rho = 3350. # mantle asthenosphere pyrolite
 
 # multiprocessing
 num_processes =  mp.cpu_count()
@@ -124,6 +123,13 @@ compositions = [
     "hacker_2015_md_xenolith",
     "mackwell_1998_maryland_diabase"
 ]
+
+color_by_composition = {
+    'mackwell_1998_maryland_diabase': '#00adee', #blue
+    'hacker_2015_md_xenolith': '#3cb371', # green
+    'sammon_2021_lower_crust': '#be1e2d', # red
+    'sammon_2021_deep_crust': '#f6921e' # yellow
+}
 
 tectonic_settings: List[TectonicSetting] = [
     {
@@ -934,17 +940,7 @@ for axis in ['top','bottom','left','right']:
 
 for comp in selected_compositions:
     ax = axes[comp]
-
-    if comp=='mackwell_1998_maryland_diabase':
-        color='#00adee' # dodgerblue
-    elif comp=='hacker_2015_md_xenolith':
-        color='#3cb371' # mediumseagreen
-    elif comp=='sammon_2021_lower_crust':
-        color='#be1e2d' # indianred
-    elif comp=='sammon_2021_deep_crust':
-        color='#f6921e' # goldenrod
-    else:
-        color='black'
+    color = color_by_composition.get(comp, "black")
 
     for _da in Das:
         outs_c_da = sorted([out for out in scenarios_out if (out["composition"] == comp) and out["Da"]==_da], key=lambda out: out["setting"],reverse=True)
@@ -985,16 +981,8 @@ for f in fluid_weakening:
 
         for i, obj in enumerate(outs_c):
             composition = obj["composition"]
+            color=color_by_composition.get(composition, "black")
             setting = obj["setting"]
-            if composition=='mackwell_1998_maryland_diabase':
-                color='dodgerblue'
-            elif composition=='hacker_2015_md_xenolith':
-                color='mediumseagreen'
-            elif composition=='sammon_2021_lower_crust':
-                color='indianred'
-            else:
-                continue
-            
             T = obj["T"]
             P = obj["P"]
             max_temp = obj["T1"]
@@ -1231,29 +1219,17 @@ for tectonic_setting in tectonic_settings:
 
         for i, obj in enumerate(outs_c):
             ax = axes[obj["composition"]]
-            
-            if obj["composition"]=='mackwell_1998_maryland_diabase':
-                color='#00adee' # dodgerblue
-            elif obj["composition"]=='hacker_2015_md_xenolith':
-                color='#3cb371' # mediumseagreen
-            elif obj["composition"]=='sammon_2021_lower_crust':
-                color='#be1e2d' # indianred
-            elif obj["composition"]=='sammon_2021_deep_crust':
-                color='#f6921e' # goldenrod
-            else:
-                color='black'
+            color=color_by_composition.get(obj["composition"],"black")
+            linewidth = 0.5 if obj["Da"] == np.max(Das) else 0.25
 
-            linewidth = 0.75 if obj["Da"] == np.max(Das) else 0.35
-            alpha = 1.0 if obj["Da"] == np.max(Das) else 0.8
-
-            ax.plot(obj["rho"], obj["z"]/1e3, color=color,linewidth=linewidth,alpha=alpha)
+            ax.plot(obj["rho"], obj["z"]/1e3, color=color,linewidth=linewidth)
 
             if obj["composition"] != selected_compositions[0]:
                 ax.set_yticks([])
                 ax.set_yticklabels([])
             
             if obj["Da"] == 1:
-                ax.plot(rho_pyrolite, obj["z"]/1e3, "k--",linewidth=0.5)
+                ax.plot(rho_pyrolite, obj["z"]/1e3, "k", dashes=[6,2], linewidth=0.5)
 
         plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"pdf")), metadata=pdf_metadata)
         plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"png")))
