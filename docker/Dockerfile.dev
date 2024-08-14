@@ -1,8 +1,9 @@
 FROM registry.gitlab.com/cianwilson/thermocodegen:jammy-merge-upgrades
 
 USER tcg
+WORKDIR $TCG_HOME
 # Clone the eclogitization repo
-RUN git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git /home/tcg/shared/eclogite-tcg
+RUN git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git
 
 USER root
 
@@ -18,7 +19,7 @@ RUN pip install --upgrade\
     && jill install 1.9 --upstream Official --confirm\
     && julia -e 'using Pkg; Pkg.add(["JSON","StatGeochem"]);'
 
-RUN cd /home/tcg/shared/eclogite-tcg\
+RUN cd eclogite-tcg\
     # Set permissions
     && chgrp adm -R .\
     && chmod g+w+x -R .\
@@ -45,6 +46,6 @@ RUN apt-get update\
     && apt-get install -y r-base\
     && R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp','scales','directlabels','showtext'))"
 
-WORKDIR /home/tcg/shared/eclogite-tcg
+WORKDIR $TCG_HOME/eclogite-tcg
 
 USER root
