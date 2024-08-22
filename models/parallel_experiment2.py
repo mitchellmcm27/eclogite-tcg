@@ -375,13 +375,13 @@ ax1.set_ylabel("depth (km)")
 ax1.set_xlabel("$T$ (°C)")
 
 ax1.invert_yaxis()
-plt.savefig(Path(output_path,"{}.{}".format("_geotherms", "pdf")), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"{}.{}".format("_geotherms", "png")))
+plt.savefig(Path(output_path,"{}.{}".format("_PTt", "pdf")), metadata=pdf_metadata)
+plt.savefig(Path(output_path,"{}.{}".format("_PTt", "png")))
 
 ax1.set_ylim([0,120])
 ax1.set_xlim([150,1300])
-plt.savefig(Path(output_path,"{}.{}".format("_geotherms_inverted", "pdf")), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"{}.{}".format("_geotherms_inverted", "png")))
+plt.savefig(Path(output_path,"{}.{}".format("_PTt_inverted", "pdf")), metadata=pdf_metadata)
+plt.savefig(Path(output_path,"{}.{}".format("_PTt_inverted", "png")))
 
 ############################################
 # Write LaTeX for 'tectonic setting' table #
@@ -960,7 +960,7 @@ plt.close(fig)
 
 fluid_weakening = [1, 0.5, 0.25, 0.1] # Weaken B to account for fluids (base eclogite rheology is dry)
 for f in fluid_weakening:
-    for _da in [3,30,300,3000,10000]:
+    for _da in [10,300,1000,3000]:
         # Setup figure for Rayleigh-Taylor analysis by composition
         fig1 = plt.figure(figsize=(3.75, 3.5))
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -980,6 +980,7 @@ for f in fluid_weakening:
         ], key=lambda o: (o["composition"],o["setting"]))
 
         for i, obj in enumerate(outs_c):
+            # get values from simulation
             composition = obj["composition"]
             color=color_by_composition.get(composition, "black")
             setting = obj["setting"]
@@ -989,38 +990,40 @@ for f in fluid_weakening:
             Da = obj["Da"]
             critical_h = obj["critical_depth"]
             rho_pyrolite = model_pyrolite_rho_gcc(T,P)*1000. # k/m3
-
             densities = np.array(obj["rho"]) * 1000.
+
+            # Define "root" as negatively buoyant portion (drho > 0)
             drho = densities - rho_pyrolite
             is_root = drho > 0.
             max_drho = max(drho)
             if(max_drho <= 0):
                 continue
+            
+            # pull out drho and T of just the root
             root_drho = drho[is_root]
             root_T= T[is_root]
             
             # set up thickness variable
-
             # note: n=1000 has to match how the solution 'y' was interpolated above
             h = np.linspace(0,40e3,1000) # meters
 
-            # allow root to thiken to 40 km, extending with the last value from the simulation if necessary
+            # allow root to thicken to 40 km, extending as needed with the final value from the simulation
             root_drho_extended = np.ones(h.size)*root_drho[-1]
             root_drho_extended[:root_drho.size] = root_drho
-            
             T_extended = np.ones(h.size)*root_T[-1]
             T_extended[:root_T.size] = root_T
 
-            # non-Newtonian deformation of eclogite
-            Rgas = 8.3145 # J/mol/K
-            g = 9.81 # m/s2
-            A_Mpa = 10.**3.3 # Jin 2001 eclogite, following Molnar & Garzione, Zieman
-            Q = 480.e3 # kJ/mol for eclogite
+            # Eclogite (Jin et al. 2001), following Molnar & Garzione, Zieman
+            Rgas = 8.3145
+            g = 9.81
+            A_Mpa = 10.**3.3
+            Q = 480.e3
             n=3.4
-            # wet olivine
-            #A_Mpa = 1.9e3 # wet olivine
-            #Q = 420e3
-            #n = 3.
+            
+            # Wet olivine
+            # A_Mpa = 1.9e3
+            # Q = 420e3
+            # n = 3.
 
             A = A_Mpa*(1e6)**(-n) # Pa^-3.4 s^-1
             F = 3.**(-(n+1.)/2./n)*(2)**(1./n) # convert imposed strain fields in lab to a general geometry
@@ -1033,19 +1036,17 @@ for f in fluid_weakening:
             E = 1.e-14 # sqrt of 2nd invariant strain rate (1/s)
             B_Peierls = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*T_extended)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
             
-            # effective viscosity
+            # Effective viscosity
             B_eff = B
             B_eff[T_extended<1000] = np.minimum(B[T_extended<1000], B_Peierls[T_extended<1000])
 
-         
-            # time-dependent average of drho and B_eff as root grows
+            # Time-dependent, moving average of drho and B_eff as root grows
             avg_drho = np.array([np.average(root_drho_extended[:i+1]) for i, r in enumerate(root_drho_extended)])
             avg_B_eff = np.array([np.average(B_eff[:i+1]) for i, b in enumerate(B_eff)])
 
-            # growth rate factor, Jull & Kelemen 2001 Fig. 15
+            # Growth rate and perturbation factors, Jull & Kelemen (2001)
             Cp = 0.66 # strong layer, L>>h, following Zieman et al.
-            # 33% for initial perturbation amplitude
-            Zp0 = 0.33 # follows Zieman et al.
+            Zp0 = 0.33 # Assume 33% for initial perturbation amplitude, follows Zieman et al.
 
             Timescale = (avg_B_eff/(2.*avg_drho*g*h))**n # Eq 7, timescale in seconds
             tbp0 = ((n/Cp)**n)*((Zp0)**(1-n))/(n-1) # Eq 12, dimensionless time for 100% deflection
@@ -1053,10 +1054,9 @@ for f in fluid_weakening:
             exx = 1e-14 # horizontal strain rate, Behn et al. 2007, Zieman et al. 2023
             epxx = exx * Timescale # by Eq. 8, dimensionless, approx 10
             epxx0 = 1e-18 * Timescale # by Eq. 8, dimensionless, approx 1e-3
-            dtpdep = -0.5 # in log units
+            dtpdep = -0.5 # log units
 
-            exponent = np.double(-epxx/tbp0*dtpdep) # ~1e14?
-            exponent[exponent>1e14] = 1e14
+            exponent = np.double(-epxx/tbp0*dtpdep)
             tbp = tbp0*(epxx/epxx0)**exponent # instability time, dimensionless
 
             tb_yr = tbp*Timescale/yr # instability time, years
