@@ -1000,7 +1000,7 @@ for f in fluid_weakening:
             root_T= T[is_root]
             
             # set up thickness variable
-            
+
             # note: n=1000 has to match how the solution 'y' was interpolated above
             h = np.linspace(0,40e3,1000) # meters
 
@@ -1031,11 +1031,11 @@ for f in fluid_weakening:
             sigma0 = 8.5e9 # Pa
             Ha = 525.e3 # J/mol/K
             E = 1.e-14 # sqrt of 2nd invariant strain rate (1/s)
-            B_HS = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*T_extended)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
+            B_Peierls = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*T_extended)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
             
             # effective viscosity
             B_eff = B
-            B_eff[T_extended<1000] = np.minimum(B[T_extended<1000],B_HS[T_extended<1000])
+            B_eff[T_extended<1000] = np.minimum(B[T_extended<1000], B_Peierls[T_extended<1000])
 
          
             # time-dependent average of drho and B_eff as root grows
