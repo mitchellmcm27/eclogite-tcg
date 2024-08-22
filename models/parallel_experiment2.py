@@ -960,7 +960,7 @@ plt.close(fig)
 
 fluid_weakening = [1, 0.5, 0.25, 0.1] # Weaken B to account for fluids (base eclogite rheology is dry)
 for f in fluid_weakening:
-    for _da in [3,30,300,3000]:
+    for _da in [3,30,300,3000,10000]:
         # Setup figure for Rayleigh-Taylor analysis by composition
         fig1 = plt.figure(figsize=(3.75, 3.5))
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -999,10 +999,18 @@ for f in fluid_weakening:
             root_drho = drho[is_root]
             root_T= T[is_root]
             
-            # thickness over time
+            # set up thickness variable
+            
+            # note: n=1000 has to match how the solution 'y' was interpolated above
             h = np.linspace(0,40e3,1000) # meters
-            times_yr =  obj["time"] * t0/yr
-      
+
+            # allow root to thiken to 40 km, extending with the last value from the simulation if necessary
+            root_drho_extended = np.ones(h.size)*root_drho[-1]
+            root_drho_extended[:root_drho.size] = root_drho
+            
+            T_extended = np.ones(h.size)*root_T[-1]
+            T_extended[:root_T.size] = root_T
+
             # non-Newtonian deformation of eclogite
             Rgas = 8.3145 # J/mol/K
             g = 9.81 # m/s2
@@ -1016,35 +1024,36 @@ for f in fluid_weakening:
 
             A = A_Mpa*(1e6)**(-n) # Pa^-3.4 s^-1
             F = 3.**(-(n+1.)/2./n)*(2)**(1./n) # convert imposed strain fields in lab to a general geometry
-            B = f*F*(A)**(-1./n)*np.exp(Q/(n*Rgas*root_T)) # Pa s = kg/m/s
+            B = f*F*(A)**(-1./n)*np.exp(Q/(n*Rgas*T_extended)) # Pa s = kg/m/s
 
             # High-stress version of B (Evans & Goetze 1979, Molnar & Jones 2004)
             eta0 = 5.7e11 # 1/s
             sigma0 = 8.5e9 # Pa
             Ha = 525.e3 # J/mol/K
             E = 1.e-14 # sqrt of 2nd invariant strain rate (1/s)
-            B_HS = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*root_T)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
+            B_HS = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*T_extended)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
             
             # effective viscosity
             B_eff = B
-            B_eff[root_T<1000] = np.minimum(B[root_T<1000],B_HS[root_T<1000])
-            B_eff = np.mean(B_eff) # depth average
+            B_eff[T_extended<1000] = np.minimum(B[T_extended<1000],B_HS[T_extended<1000])
+
+         
+            # time-dependent average of drho and B_eff as root grows
+            avg_drho = np.array([np.average(root_drho_extended[:i+1]) for i, r in enumerate(root_drho_extended)])
+            avg_B_eff = np.array([np.average(B_eff[:i+1]) for i, b in enumerate(B_eff)])
 
             # growth rate factor, Jull & Kelemen 2001 Fig. 15
-            Cp = 0.66 # strong layer, L>>h, following Zieman
-            # 33% for initial perturbation amplitude, following Zieman
-            Zp0 = 0.33
+            Cp = 0.66 # strong layer, L>>h, following Zieman et al.
+            # 33% for initial perturbation amplitude
+            Zp0 = 0.33 # follows Zieman et al.
 
-            Timescale = (B_eff/(2.*max_drho*g*h))**n # Eq 7, gives a timescale in seconds
+            Timescale = (avg_B_eff/(2.*avg_drho*g*h))**n # Eq 7, timescale in seconds
             tbp0 = ((n/Cp)**n)*((Zp0)**(1-n))/(n-1) # Eq 12, dimensionless time for 100% deflection
 
-            exx = 1e-14 # horizontal strain rate, Behn et al. 2007, Zieman
+            exx = 1e-14 # horizontal strain rate, Behn et al. 2007, Zieman et al. 2023
             epxx = exx * Timescale # by Eq. 8, dimensionless, approx 10
             epxx0 = 1e-18 * Timescale # by Eq. 8, dimensionless, approx 1e-3
-            dtp = 2e5-3e7
-            dep = 1e-6-3e-10
-            #dtpdep = dtp/dep # ~ -3e13 assuming it's not in log units
-            dtpdep = -0.5 # assuming it is in log units
+            dtpdep = -0.5 # in log units
 
             exponent = np.double(-epxx/tbp0*dtpdep) # ~1e14?
             exponent[exponent>1e14] = 1e14
@@ -1053,21 +1062,20 @@ for f in fluid_weakening:
             tb_yr = tbp*Timescale/yr # instability time, years
 
             plt.figure(fig1)
-            plt.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], '-', linewidth=(root_T[-1]/1273.15)**2, color=color,alpha=0.25,)
-            plt.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(root_T[-1]/1273.15)**2, color=color)
+            plt.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], '-', linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
+            plt.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
             plt.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)
-
+        
             if(f==0.25 and _da==3000):
                 print("composition: "+composition)
                 print("setting: "+setting)
                 print("max drho: {:.2f}".format(max_drho))
                 print("f: {:.2f}".format(f))
                 print("T: {:.2f} K".format(root_T[-1]))
-                print("B_eff: {:.2e}".format(B_eff))
                 print("tbp0: {:.2e}".format(tbp0))
                 print("exponent: {:.2e}--{:.2e}".format(min(exponent),max(exponent)))
                 print("\n")
-
+        
         plt.figure(fig1)
         plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"pdf")), metadata=pdf_metadata)
         plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"png")))
