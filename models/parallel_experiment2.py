@@ -448,7 +448,6 @@ def get_u0(Fi0:List[float], cik0:List[float])->List[float]:
     u0=np.empty(I+K+2) # [...I endmembers, ...K phases, P, T]
     u0[:I] = Fi0 # intial phase mass fractions
     u0[I:I+K] = cik0 # initial endmember mass fractions
-    u0[I+K:] = np.array([1., 1.]) # scaled T0 and P0 (T/T0 = P/P0 = 1)
     return u0
 
 def reshape_C(rxn,cik:List[float])->List[List[float]]:
@@ -700,7 +699,7 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     args = (rxn,scale,_da,L0,z0,As,hr0,k,Ts,Tlab)
 
     # Solve IVP using BDF method
-    sol = solve_ivp(rhs, [0, end_t], u0[:-2], args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol, events=None)
+    sol = solve_ivp(rhs, [0, end_t], u0, args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol, events=None)
     
     # resample solution
     times = np.linspace(0,end_t,1000)
