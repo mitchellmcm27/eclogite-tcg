@@ -442,14 +442,6 @@ I = len(rxn.phases())
 _Kis = [len(rxn.phases()[i].endmembers()) for i in range(I)] # list, num EMs in each phase
 K = sum(_Kis)
 
-def get_u0(Fi0:List[float], cik0:List[float])->List[float]:
-    # Equilibrate the reative model at initial (T0, P0) with Da=1e5
-    # Set up vector of initial conditions
-    u0=np.empty(I+K+2) # [...I endmembers, ...K phases, P, T]
-    u0[:I] = Fi0 # intial phase mass fractions
-    u0[I:I+K] = cik0 # initial endmember mass fractions
-    return u0
-
 def reshape_C(rxn,cik:List[float])->List[List[float]]:
     c:List[List[float]] = rxn.zero_C()
     k = 0
@@ -604,7 +596,7 @@ def rhs_fixed(t,u,rxn,Da,T,P,rho0):
 # Define RHS of differential system of eqns #
 #############################################
 
-def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
+def rhs(t,u,rxn,scale,thermal):
     
     # Extract variables
     Fi = u[:I] # phase mass fractions
@@ -612,19 +604,28 @@ def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
 
     h0 = scale["h"]
     rho0 = scale["rho"]
+    Da = scale["Da"]
 
-    # limiting depth to some value (e.g. 500 km) required here. If python tries to take a very large timestep
+    L0 = thermal["L0"]
+    z0 = thermal["z0"]
+    As = thermal["As"]
+    hr0 = thermal["hr0"]
+    k = thermal["k"]
+    Ts = thermal["Ts"]
+    Tlab = thermal["Tlab"]
+
+    # limiting depth to some value (e.g. 200 km) required here. If python tries to take a very large timestep
     # we will be out of bounds for the thermodynamic database
-    z_t = min(500e3, z0 + t*h0)
+    z_t = min(200e3, z0 + t*h0)
 
     shortening_t = z_t/z0
     P_t = crustal_rho * gravity * z_t / 1e5 # bar
     T_t, q_s = geotherm_steady(z0/L0,
         L0*shortening_t,
         shortening_t,
-        Ts=T_surf,
+        Ts=Ts,
         Tlab=Tlab,
-        k=conductivity,
+        k=k,
         A=As,
         hr0=hr0) # K
     
@@ -689,14 +690,14 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     # Set reaction's characteristic Arrhenius temperature (T_r)
     rxn.set_parameter("T0",Tr)
 
-    scale= {"rho":rho0, "h":h0}
-
     # Set up vector of initial conditions
-    u0 = get_u0(Fi0,cik0)
+    u0=np.empty(I+K) # [...I phases, ...K endmembers]
+    u0[:I] = Fi0 # intial phase mass fractions
+    u0[I:I+K] = cik0 # initial endmember mass fractions
 
-    # Rescale damkohler number in case the end time is not 1
-    _da = Da * end_t
-    args = (rxn,scale,_da,L0,z0,As,hr0,k,Ts,Tlab)
+    scale= {"rho":rho0, "h":h0, "Da":Da}
+    thermal = {"L0":L0, "z0":z0, "As":As,"hr0":hr0,"k":k,"Ts":Ts,"Tlab":Tlab}
+    args = (rxn, scale, thermal)
 
     # Solve IVP using BDF method
     sol = solve_ivp(rhs, [0, end_t], u0, args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol, events=None)
@@ -726,7 +727,7 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     # Calculate rho for each timestep as 1/sum_i(F_i/rho_i)
     # for which we need the endmember compositions as a vector for each phase (Cs_times)
     rho_times = [1/sum(Fi_times[idx]/rxn.rho(T_times[idx], P_times[idx], Cs_times[idx]))/10. for idx,_ in enumerate(times)]
-    print("{} P_end = {:.2f} Gpa. T_end = {:.2f} K. DA = {}. Used {:n} steps.".format(sol.message,P_times[-1]/1e4,T_times[-1],_da,len(sol.t)))
+    print("{} P_end = {:.2f} Gpa. T_end = {:.2f} K. DA = {}. Used {:n} steps.".format(sol.message,P_times[-1]/1e4,T_times[-1],Da,len(sol.t)))
 
     scenario["T"] = np.asarray(T_times) # K
     scenario["P"] = np.asarray(P_times) # bar
