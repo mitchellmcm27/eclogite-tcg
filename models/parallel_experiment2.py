@@ -78,7 +78,7 @@ cm = 1e-2
 save_output = False
 load_output = True
 
-reference= "parallel_experiment2"
+reference = "parallel_experiment2"
 rxn_name = "eclogitization_2024_slb21_rx"
 
 # only phases greater than this fraction will be plotted
@@ -691,11 +691,11 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     rxn.set_parameter("T0",Tr)
 
     # Set up vector of initial conditions
-    u0=np.empty(I+K) # [...I phases, ...K endmembers]
+    u0 = np.empty(I+K) # [...I phases, ...K endmembers]
     u0[:I] = Fi0 # intial phase mass fractions
     u0[I:I+K] = cik0 # initial endmember mass fractions
 
-    scale= {"rho":rho0, "h":h0, "Da":Da}
+    scale = {"rho":rho0, "h":h0, "Da":Da}
     thermal = {"L0":L0, "z0":z0, "As":As,"hr0":hr0,"k":k,"Ts":Ts,"Tlab":Tlab}
     args = (rxn, scale, thermal)
 
@@ -975,7 +975,7 @@ for f in fluid_weakening:
         for i, obj in enumerate(outs_c):
             # get values from simulation
             composition = obj["composition"]
-            color=color_by_composition.get(composition, "black")
+            color = color_by_composition.get(composition, "black")
             setting = obj["setting"]
             T = obj["T"]
             P = obj["P"]
@@ -994,10 +994,10 @@ for f in fluid_weakening:
             
             # pull out drho and T of just the root
             root_drho = drho[is_root]
-            root_T= T[is_root]
+            root_T = T[is_root]
             
             # set up thickness variable
-            # note: n=1000 has to match how the solution 'y' was interpolated above
+            # note: n = 1000 has to match how the solution 'y' was interpolated above
             h = np.linspace(0,40e3,1000) # meters
 
             # allow root to thicken to 40 km, extending as needed with the final value from the simulation
@@ -1011,7 +1011,7 @@ for f in fluid_weakening:
             g = 9.81
             A_Mpa = 10.**3.3
             Q = 480.e3
-            n=3.4
+            n = 3.4
             
             # Wet olivine
             # A_Mpa = 1.9e3
@@ -1216,7 +1216,7 @@ for tectonic_setting in tectonic_settings:
         for axis in ['top','bottom','left','right']:
             [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
   
-        rho_pyrolite=model_pyrolite_rho_gcc(T,P)
+        rho_pyrolite = model_pyrolite_rho_gcc(T,P)
 
         for i, obj in enumerate(outs_c):
             ax = axes[obj["composition"]]
