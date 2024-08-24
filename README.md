@@ -2,7 +2,7 @@
 
 Cite the paper: TBD
 
-Cite the code: https://doi.org/10.5281/zenodo.10835976
+Cite the code: https://doi.org/10.5281/zenodo.10835975
 
 ## Installation
 
