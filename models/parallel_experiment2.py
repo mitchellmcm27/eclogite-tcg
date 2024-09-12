@@ -912,48 +912,14 @@ with open(Path(output_path,'_summary.csv'),'w') as csvfile:
         writer.writerow(out)
     print("wrote CSV")
 
-###########################
-# Plot max. stable depths #
-###########################
-
-selected_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
-
-fig = plt.figure(figsize=(20,7.5))
-axes = fig.subplot_mosaic([selected_compositions])
-
-# Invert y axis because it represents depth
-[ax.invert_yaxis() for label,ax in axes.items()]
-[ax.set_ylim([z1/1.e3,z0/1.e3]) for label,ax in axes.items()]
-[ax.tick_params(width=0.4) for label,ax in axes.items()]
-for axis in ['top','bottom','left','right']:
-    [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
-
-[ax.set_xlabel("Temperature (°C)")for label,ax in axes.items()]
-[ax.set_ylabel("Critical depth (km)")for label,ax in axes.items()]
-
-for comp in selected_compositions:
-    ax = axes[comp]
-    color = color_by_composition.get(comp, "black")
-
-    for _da in Das:
-        outs_c_da = sorted([out for out in scenarios_out if (out["composition"] == comp) and out["Da"]==_da], key=lambda out: out["setting"],reverse=True)
-        crit_T = np.array([o["critical_temperature"] for o in outs_c_da])
-        crit_z = np.array([o["critical_depth"] for o in outs_c_da])
-        s = ax.plot(crit_T-273.15, crit_z/1.e3,color=color,linewidth=0.75)
-        for obj in outs_c_da:
-            ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#888888',linewidth=0.25, label=obj['setting'])
-
-plt.savefig(Path(output_path,"{}.{}".format("_critical", "pdf")), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"{}.{}".format("_critical", "png")))
-plt.close(fig)
-
 #############################
 # Rayleigh--Taylor analysis #
 #############################
 
+selected_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
 fluid_weakening = [1, 0.5, 0.25, 0.1] # Weaken B to account for fluids (base eclogite rheology is dry)
 for f in fluid_weakening:
-    for _da in [10,300,1000,3000]:
+    for _da in [10,300,1000,3000,10000]:
         # Setup figure for Rayleigh-Taylor analysis by composition
         fig1 = plt.figure(figsize=(3.75, 3.5))
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -962,10 +928,14 @@ for f in fluid_weakening:
         plt.gca().set_ylim([1e5,5e7])
         plt.gca().set_yscale("log")
         plt.gca().set_xlim([0,40])
+
         v0_yr = v0 * yr # converted from m/s to m/yr
-        plt.plot(np.logspace(5,8,num=200)*v0_yr/1e3, np.logspace(5,8,num=200),'k-')
-        plt.plot(np.logspace(5,8,num=200)*0.7*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
-        plt.plot(np.logspace(5,8,num=200)*1.5*v0_yr/1e3, np.logspace(5,8,num=200),'k--',alpha=0.7,linewidth=0.5)
+        t_growth_log = np.logspace(5,8,num=200) # yr
+        h_growth_log = t_growth_log*v0_yr/1e3 # km
+
+        plt.plot(h_growth_log, t_growth_log,'k-')
+        plt.plot(h_growth_log*0.7, t_growth_log,'k--',alpha=0.7,linewidth=0.5)
+        plt.plot(h_growth_log*1.5,t_growth_log,'k--',alpha=0.7,linewidth=0.5)
         plt.gca().set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
 
         outs_c = sorted([o for o in scenarios_out 
@@ -997,8 +967,10 @@ for f in fluid_weakening:
             root_T = T[is_root]
             
             # set up thickness variable
-            # note: n = 1000 has to match how the solution 'y' was interpolated above
-            h = np.linspace(0,40e3,1000) # meters
+            # note: because we are shifting portions of arrays around,
+            # both the length of these arrays and the size of dt have to match how the solution 'y' was calculated
+            t_growth_yr = obj["time"]*t0/yr # 0 to 50e6 years
+            h = t_growth_yr/1e3  # 0 to 50e3 meteres
 
             # allow root to thicken to 40 km, extending as needed with the final value from the simulation
             root_drho_extended = np.ones(h.size)*root_drho[-1]
@@ -1057,22 +1029,70 @@ for f in fluid_weakening:
             plt.figure(fig1)
             plt.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], '-', linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
             plt.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
-            plt.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)
-        
-            if(f==0.25 and _da==3000):
-                print("composition: "+composition)
-                print("setting: "+setting)
-                print("max drho: {:.2f}".format(max_drho))
-                print("f: {:.2f}".format(f))
-                print("T: {:.2f} K".format(root_T[-1]))
-                print("tbp0: {:.2e}".format(tbp0))
-                print("exponent: {:.2e}--{:.2e}".format(min(exponent),max(exponent)))
-                print("\n")
+            plt.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)  
+
+            intersection_idx = np.argwhere(np.diff(np.sign(tb_yr - t_growth_yr))).flatten()
+            intersection_idx = intersection_idx[intersection_idx > 0]
+            if(intersection_idx.size):
+                intersection_idx = intersection_idx[0]
+                final_h = h[intersection_idx]
+                final_tb = tb_yr[intersection_idx]
+                final_T = T_extended[intersection_idx]
+            else:
+                final_h = np.nan
+                final_tb = np.nan
+                final_T = np.nan
+
+            plt.plot(final_h/1.e3, final_tb, 'o', color=color,markersize=4)
+
+            if(_da==10000):
+                obj["final_h_{}".format(f)] = final_h
+                obj["final_depth_{}".format(f)] = final_h + obj["critical_depth"]
+                obj["final_T_{}".format(f)] = final_T
+                obj["final_t_{}".format(f)] = final_tb + obj["critical_time"]
         
         plt.figure(fig1)
         plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"pdf")), metadata=pdf_metadata)
         plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"png")))
         plt.close(fig1)
+
+###########################
+# Plot max. stable depths #
+###########################
+
+fig = plt.figure(figsize=(20,7.5))
+axes = fig.subplot_mosaic([selected_compositions])
+
+# Invert y axis because it represents depth
+[ax.invert_yaxis() for label,ax in axes.items()]
+[ax.set_ylim([z1/1.e3,z0/1.e3]) for label,ax in axes.items()]
+[ax.tick_params(width=0.4) for label,ax in axes.items()]
+for axis in ['top','bottom','left','right']:
+    [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
+
+[ax.set_xlabel("Temperature (°C)")for label,ax in axes.items()]
+[ax.set_ylabel("Critical depth (km)")for label,ax in axes.items()]
+
+for comp in selected_compositions:
+    ax = axes[comp]
+    color = color_by_composition.get(comp, "black")
+
+    for _da in Das:
+        outs_c_da = sorted([out for out in scenarios_out if (out["composition"] == comp) and out["Da"]==_da], key=lambda out: out["setting"],reverse=True)
+        crit_T = np.array([o["critical_temperature"] for o in outs_c_da])
+        crit_z = np.array([o["critical_depth"] for o in outs_c_da])
+        s = ax.plot(crit_T-273.15, crit_z/1.e3,color=color,linewidth=0.75)
+        if _da==10000:
+            for f in fluid_weakening:
+                final_z = np.array([o["final_depth_{}".format(f)] for o in outs_c_da])
+                final_T = np.array([o["final_T_{}".format(f)] for o in outs_c_da])
+                ax.plot(final_T-273.15, final_z/1.e3, 'r--',alpha=np.sqrt(f))
+        for obj in outs_c_da:
+            ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#888888',linewidth=0.25, label=obj['setting'])
+
+plt.savefig(Path(output_path,"{}.{}".format("_critical", "pdf")), metadata=pdf_metadata)
+plt.savefig(Path(output_path,"{}.{}".format("_critical", "png")))
+plt.close(fig)
 
 ##########################################################
 # Summary plots for every composition & tectonic setting #
