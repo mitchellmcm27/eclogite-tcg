@@ -1028,8 +1028,9 @@ for f in fluid_weakening:
             tb_yr = tbp*Timescale/yr # instability time, years
 
             plt.figure(fig1)
-            plt.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], '-', linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
-            plt.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
+            line, = plt.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
+            linestyle = line.get_linestyle()
+            plt.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], linestyle=linestyle, linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
             plt.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)  
 
             intersection_idx = np.argwhere(np.diff(np.sign(tb_yr - t_growth_yr))).flatten()
