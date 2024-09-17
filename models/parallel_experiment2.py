@@ -611,14 +611,20 @@ def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
     Fi = u[:I] # phase mass fractions
     cik = u[I:I+K] # endmember mass fractions
 
-    T = u[I+K]
-    P = u[I+K+1] 
- 
-    # Scalings
-    Ts = scale["T"]*T
-    Ps = scale["P"]*P
+    h0 = scale["h"]
     rho0 = scale["rho"]
-    dz = scale["h"] # length scale h0
+
+    zs = z0 + t*h0
+    shortening = zs/z0
+    Ps = crustal_rho * gravity * zs / 1e5
+    Ts, q_s = geotherm_steady(z0/L0,
+        L0*shortening,
+        shortening,
+        Ts=T_surf,
+        Tlab=Tlab,
+        k=conductivity,
+        A=As,
+        hr0=hr0)
 
     # reshape C
     C = rxn.zero_C() # object with correct shape
@@ -658,24 +664,6 @@ def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
             du[I+sKi+k] = Da*rho0*GikcGi*V/Fis[i]
         sKi += _Kis[i]
 
-    # dT/dt
-    shortening = 1 + ((dz+z0)/z0 - 1)*t
-    T_steady, q_s = geotherm_steady(z0/L0,
-                                    L0*shortening,
-                                    shortening,
-                                    Ts=T_surf,
-                                    Tlab=Tlab,
-                                    k=conductivity,
-                                    A=As,
-                                    hr0=hr0)
-    dT = (T_steady-Ts)*dz/scale["T"]
-
-    # dP/dt
-    dP = crustal_rho * gravity / 1e5 * dz # bar 
-    dP = dP/scale["P"]
-
-    # add dT and dP to outputs
-    du[I+K:] = np.array([dT, dP])
 
     return du
 
@@ -702,7 +690,7 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     # Set reaction's characteristic Arrhenius temperature (T_r)
     rxn.set_parameter("T0",Tr)
 
-    scale= {"T":T0, "P":P0, "rho":rho0, "h":h0}
+    scale= {"rho":rho0, "h":h0}
 
     # Set up vector of initial conditions
     u0 = get_u0(Fi0,cik0)
