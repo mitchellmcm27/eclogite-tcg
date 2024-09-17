@@ -118,8 +118,8 @@ prefix = None
 
 # Compositions
 compositions = [
-    "sammon_2021_lower_crust",
     "sammon_2021_deep_crust",
+    "sammon_2021_lower_crust",
     "hacker_2015_md_xenolith",
     "mackwell_1998_maryland_diabase"
 ]
@@ -129,6 +129,13 @@ color_by_composition = {
     'hacker_2015_md_xenolith': '#3cb371', # green
     'sammon_2021_lower_crust': '#be1e2d', # red
     'sammon_2021_deep_crust': '#f6921e' # yellow
+}
+
+abbrev_by_composition = {
+    'mackwell_1998_maryland_diabase': 'MD', #blue
+    'hacker_2015_md_xenolith': 'MGX', # green
+    'sammon_2021_lower_crust': 'SLC', # red
+    'sammon_2021_deep_crust': 'SDC' # yellow
 }
 
 tectonic_settings: List[TectonicSetting] = [
@@ -917,30 +924,58 @@ with open(Path(output_path,'_summary.csv'),'w') as csvfile:
 # Rayleigh--Taylor analysis #
 #############################
 
-selected_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
+unstable_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
 fluid_weakening = [1, 0.5, 0.25, 0.1] # Weaken B to account for fluids (base eclogite rheology is dry)
-for f in fluid_weakening:
-    for _da in [10,300,1000,3000,10000]:
-        # Setup figure for Rayleigh-Taylor analysis by composition
-        fig1 = plt.figure(figsize=(3.75, 3.5))
-        plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-        # y axis is time (yr) in log scale
-        # x axis is layer thickness (km), linear
-        plt.gca().set_ylim([1e5,5e7])
-        plt.gca().set_yscale("log")
-        plt.gca().set_xlim([0,40])
+da_factors = [10,300,1000,3000,10000]
+
+fig = plt.figure(figsize=(15,15))
+
+axes = fig.subplot_mosaic([
+    # 1   0.5  0.25  0.1
+    ['11','12','13','14'],  # 10
+    ['21','22','23','24'],  # 300
+    ['31','32','33','34'],  # 1000
+    ['41','42','43','44'],  # 3000
+    ['51','52','53','54']], # 10000
+    sharex=True,
+    sharey=True,
+) 
+
+plt.ylim([1e5,5e7])
+plt.yscale("log")
+plt.xlim([0,40])
+
+for lb in ["51", "52", "53", "54"]:
+    ax = axes[lb]
+    ax.set_xlabel("Root thickness $h$ (km)")
+for lb in ["11", "21", "31", "41", "51"]:
+    ax = axes[lb]
+    ax.set_ylabel("Instability time $t_b$ (Myr)")
+for lb_idx,lb in enumerate(["11","12","13","14"]):
+    ax = axes[lb]
+    ax.set_title("$f={}$".format(fluid_weakening[lb_idx]))
+for lb_idx,lb in enumerate(["14","24","34","44","54"]):
+    ax = axes[lb]
+    ax.yaxis.set_label_position("right")
+    ax.set_ylabel("$Da = {}$".format(da_factors[lb_idx]), rotation=270, va="bottom")
+
+for f_idx, f in enumerate(fluid_weakening):
+    for da_idx, _da in enumerate(da_factors):
+
+        ax_label = "{}{}".format(da_idx+1,f_idx+1)
+        ax = axes[ax_label]
 
         v0_yr = v0 * yr # converted from m/s to m/yr
         t_growth_log = np.logspace(5,8,num=200) # yr
         h_growth_log = t_growth_log*v0_yr/1e3 # km
 
-        plt.plot(h_growth_log, t_growth_log,'k-')
-        plt.plot(h_growth_log*0.7, t_growth_log,'k--',alpha=0.7,linewidth=0.5)
-        plt.plot(h_growth_log*1.5,t_growth_log,'k--',alpha=0.7,linewidth=0.5)
-        plt.gca().set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
+        ax.plot(h_growth_log, t_growth_log,'k-')
+        ax.plot(h_growth_log*0.7, t_growth_log,'k--',alpha=0.7,linewidth=0.5)
+        ax.plot(h_growth_log*1.5,t_growth_log,'k--',alpha=0.7,linewidth=0.5)
+        ax.set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
 
         outs_c = sorted([o for o in scenarios_out 
-            if (o["composition"] in selected_compositions and o["Da"]==_da)
+            if (o["composition"] in unstable_compositions and o["Da"]==_da)
         ], key=lambda o: (o["composition"],o["setting"]))
 
         for i, obj in enumerate(outs_c):
@@ -1027,11 +1062,11 @@ for f in fluid_weakening:
 
             tb_yr = tbp*Timescale/yr # instability time, years
 
-            plt.figure(fig1)
-            line, = plt.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
+            #plt.figure(fig)
+            line, = ax.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
             linestyle = line.get_linestyle()
-            plt.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], linestyle=linestyle, linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
-            plt.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)  
+            ax.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], linestyle=linestyle, linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
+            ax.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)  
 
             intersection_idx = np.argwhere(np.diff(np.sign(tb_yr - t_growth_yr))).flatten()
             intersection_idx = intersection_idx[intersection_idx > 0]
@@ -1045,25 +1080,25 @@ for f in fluid_weakening:
                 final_tb = np.nan
                 final_T = np.nan
 
-            plt.plot(final_h/1.e3, final_tb, 'o', color=color,markersize=4)
+            ax.plot(final_h/1.e3, final_tb, 'o', color=color,markersize=4)
 
             if(_da==10000):
                 obj["final_h_{}".format(f)] = final_h
                 obj["final_depth_{}".format(f)] = final_h + obj["critical_depth"]
                 obj["final_T_{}".format(f)] = final_T
                 obj["final_t_{}".format(f)] = final_tb + obj["critical_time"]
-        
-        plt.figure(fig1)
-        plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"pdf")), metadata=pdf_metadata)
-        plt.savefig(Path(output_path,"_instability.Da{}.f{}.{}".format(_da,f,"png")))
-        plt.close(fig1)
+
+plt.tight_layout()
+plt.savefig(Path(output_path,"_instability.pdf"), metadata=pdf_metadata)
+plt.savefig(Path(output_path,"_instability.png"), dpi=300)
+plt.close(fig)
 
 ###########################
 # Plot max. stable depths #
 ###########################
 
 fig = plt.figure(figsize=(20,7.5))
-axes = fig.subplot_mosaic([selected_compositions])
+axes = fig.subplot_mosaic([unstable_compositions])
 
 # Invert y axis because it represents depth
 [ax.invert_yaxis() for label,ax in axes.items()]
@@ -1072,10 +1107,11 @@ axes = fig.subplot_mosaic([selected_compositions])
 for axis in ['top','bottom','left','right']:
     [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
 
-[ax.set_xlabel("Temperature (°C)")for label,ax in axes.items()]
-[ax.set_ylabel("Critical depth (km)")for label,ax in axes.items()]
+[ax.set_xlabel("Temperature (°C)") for label,ax in axes.items()]
+[ax.set_ylabel("Critical depth (km)") for label,ax in axes.items()]
+[ax.set_title(label) for label,ax in axes.items()]
 
-for comp in selected_compositions:
+for comp in unstable_compositions:
     ax = axes[comp]
     color = color_by_composition.get(comp, "black")
 
@@ -1092,8 +1128,8 @@ for comp in selected_compositions:
         for obj in outs_c_da:
             ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#888888',linewidth=0.25, label=obj['setting'])
 
-plt.savefig(Path(output_path,"{}.{}".format("_critical", "pdf")), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"{}.{}".format("_critical", "png")))
+plt.savefig(Path(output_path,"_critical.pdf"), metadata=pdf_metadata)
+plt.savefig(Path(output_path,"_critical.png"), dpi=300)
 plt.close(fig)
 
 ##########################################################
@@ -1155,7 +1191,7 @@ for composition in compositions:
 
         # Plot temperature vs depth
         ax = axes["T"]
-        ax.plot(T-273.15, base["z"]/1e3, linewidth=2)
+        ax.plot(T-273.15, base["z"]/1e3, 'r-', linewidth=2)
         ax.set_xlabel("T (°C)")
         ax2 = ax.twinx()
         ax2.plot(T-273.15, P/1e4, alpha=0)
@@ -1195,66 +1231,77 @@ for composition in compositions:
         for j, obj in enumerate(outs_c):
             XAn = [x[3][0] for x in obj["Xik"]]
             XJd = [x[0][4] for x in obj["Xik"]]
-
             axes["An"].plot(XAn, obj["z"])
             axes["Jd"].plot(XJd, obj["z"])
 
         fig.suptitle("{}, {}, $v_0=${:.1f} km/Myr, $S0=${} 1/m".format(composition.capitalize().replace("_"," "), setting.replace("_",", "), v0/1e3*yr*1e6, S0),y=0.9)
-        plt.savefig(Path(output_path,"{}.{}.{}".format(setting,composition,"pdf")), metadata=pdf_metadata)
-        plt.savefig(Path(output_path,"{}.{}.{}".format(setting,composition,"png")))
+        plt.savefig(Path(output_path,"{}.{}.pdf".format(setting,composition)), metadata=pdf_metadata)
+        plt.savefig(Path(output_path,"{}.{}.png".format(setting,composition)), dpi=300)
         plt.close(fig)
 
 
 #####################################################
 # For each setting, plot each composition's density #
 #####################################################
-selected_compositions = [
-    "sammon_2021_deep_crust",
-    "sammon_2021_lower_crust",
-    "hacker_2015_md_xenolith",
-    "mackwell_1998_maryland_diabase"
-]        
-for tectonic_setting in tectonic_settings:
 
-        setting = tectonic_setting["setting"]
-        outs_c = sorted([out for out in scenarios_out if (out["composition"] in selected_compositions and out["setting"] == setting)], key=lambda out: out["Da"])
-        
-        # grab 'constants' from first output
-        base = outs_c[0] 
-        T = base["T"]
-        P = base["P"]
-        # Setup figure for rho-profile mosaic
-        fig = plt.figure(figsize=(6.5,3.0))
-        axes = fig.subplot_mosaic([selected_compositions])
-        plt.tight_layout(pad=0.075, w_pad=0.075, h_pad=.075)
-        [ax.set_prop_cycle(plt.cycler("color", greys(np.linspace(0.2, 1, num_lines)))) for label,ax in axes.items()]
+# Setup figure for rho-profile mosaic
+fig = plt.figure(figsize=(6.5,20))
+axes = fig.subplot_mosaic([
+    #SDC   SLC   MGX    MD
+    ["11", "12", "13", "14"], # setting a
+    ["21", "22", "23", "24"], # b
+    ["31", "32", "33", "34"], # c
+    ["41", "42", "43", "44"], # d
+    ["51", "52", "53", "54"], # e
+    ["61", "62", "63", "64"], # f
+    ["71", "72", "73", "74"], # g
+    ["81", "82", "83", "84"], # h
+    ["91", "92", "93", "94"]],# i
+    sharex=True, 
+    sharey=True,
+)
 
-        # Invert y axis because it represents depth
-        [ax.invert_yaxis() for label,ax in axes.items()]
-        [ax.set_xlim([2.8,3.5]) for label,ax in axes.items()]
-        [ax.set_xticks([2.8,3.0,3.2,3.4]) for label,ax in axes.items()]
-        [ax.set_ylim([z1/1.e3,z0/1.e3]) for label,ax in axes.items()]
-        [ax.tick_params(width=0.4) for label,ax in axes.items()]
-        for axis in ['top','bottom','left','right']:
-            [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
-  
-        rho_pyrolite = model_pyrolite_rho_gcc(T,P)
+[ax.set_prop_cycle(plt.cycler("color", greys(np.linspace(0.2, 1, num_lines)))) for label,ax in axes.items()]
 
-        for i, obj in enumerate(outs_c):
-            ax = axes[obj["composition"]]
+# Invert y axis because it represents depth
+plt.gca().invert_yaxis() 
+plt.xlim([2.8,3.5]) 
+plt.xticks([2.8,3.0,3.2,3.4]) 
+plt.ylim([z1/1.e3,z0/1.e3])
+plt.tick_params(width=0.4)
+
+for lb in ["91","92","93","94"]:
+    ax=axes[lb]
+    ax.set_xlabel("Density (g/cc)")
+for lb in ["11","21","31","41","51","61","71","81","91"]:
+    ax=axes[lb]
+    ax.set_ylabel("Depth (km)")
+for lb_idx,lb in enumerate(["11","12","13","14"]):
+    ax=axes[lb]
+    ax.xaxis.set_label_position("top")
+    ax.set_xlabel(abbrev_by_composition[compositions[lb_idx]])
+for lb_idx,lb in enumerate(["14","24","34","44","54","64","74","84","94"]):
+    ax=axes[lb]
+    ax.yaxis.set_label_position("right")
+    ax.set_ylabel("path {}".format(tectonic_settings[lb_idx]["setting"]), rotation=270, va="bottom")
+
+for t_idx, tectonic_setting in enumerate(tectonic_settings):
+    for c_idx, composition in enumerate(compositions):
+        ax_label = "{}{}".format(t_idx+1,c_idx+1)
+        ax = axes[ax_label]
+        objs = [o for o in scenarios_out if (o["composition"] == composition and o["setting"] == tectonic_setting["setting"])]
+        for obj in objs:           
             color=color_by_composition.get(obj["composition"],"black")
             linewidth = 0.5 if obj["Da"] == np.max(Das) else 0.25
             alpha = 1 if obj["Da"] == np.max(Das) else 0.8
             ax.plot(obj["rho"], obj["z"]/1e3, color=color,linewidth=linewidth)
-
-            if obj["composition"] != selected_compositions[0]:
-                ax.set_yticks([])
-                ax.set_yticklabels([])
-            
             if obj["Da"] == 1:
+                T = obj["T"]
+                P = obj["P"]
+                rho_pyrolite = model_pyrolite_rho_gcc(T,P)
                 ax.plot(rho_pyrolite, obj["z"]/1e3, "k", dashes=[10,4], linewidth=0.35)
-
-        plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"pdf")), metadata=pdf_metadata)
-        plt.savefig(Path(output_path,"_collage.{}.{}".format(setting,"png")))
-        plt.close(fig)
+plt.tight_layout()
+plt.savefig(Path(output_path,"_density.pdf"), metadata=pdf_metadata)
+plt.savefig(Path(output_path,"_density.png"), dpi=300)
+plt.close(fig)
 
