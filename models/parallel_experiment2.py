@@ -1080,7 +1080,8 @@ for f_idx, f in enumerate(fluid_weakening):
                 final_tb = np.nan
                 final_T = np.nan
 
-            ax.plot(final_h/1.e3, final_tb, 'o', color=color,markersize=4)
+            if final_h + obj["critical_depth"] <= 80.e3:
+                ax.plot(final_h/1.e3, final_tb, 'o', color=color,markersize=4)
 
             if(_da==10000):
                 obj["final_h_{}".format(f)] = final_h
@@ -1292,7 +1293,7 @@ for t_idx, tectonic_setting in enumerate(tectonic_settings):
         objs = [o for o in scenarios_out if (o["composition"] == composition and o["setting"] == tectonic_setting["setting"])]
         for obj in objs:           
             color=color_by_composition.get(obj["composition"],"black")
-            linewidth = 0.5 if obj["Da"] == np.max(Das) else 0.25
+            linewidth = 0.75 if obj["Da"] == np.max(Das) else 0.5
             alpha = 1 if obj["Da"] == np.max(Das) else 0.8
             ax.plot(obj["rho"], obj["z"]/1e3, color=color,linewidth=linewidth)
             if obj["Da"] == 1:
