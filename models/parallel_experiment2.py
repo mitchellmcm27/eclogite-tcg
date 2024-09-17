@@ -78,7 +78,7 @@ cm = 1e-2
 save_output = False
 load_output = True
 
-reference= "parallel_experiment2"
+reference = "parallel_experiment2"
 rxn_name = "eclogitization_2024_slb21_rx"
 
 # only phases greater than this fraction will be plotted
@@ -442,15 +442,6 @@ I = len(rxn.phases())
 _Kis = [len(rxn.phases()[i].endmembers()) for i in range(I)] # list, num EMs in each phase
 K = sum(_Kis)
 
-def get_u0(Fi0:List[float], cik0:List[float])->List[float]:
-    # Equilibrate the reative model at initial (T0, P0) with Da=1e5
-    # Set up vector of initial conditions
-    u0=np.empty(I+K+2) # [...I endmembers, ...K phases, P, T]
-    u0[:I] = Fi0 # intial phase mass fractions
-    u0[I:I+K] = cik0 # initial endmember mass fractions
-    u0[I+K:] = np.array([1., 1.]) # scaled T0 and P0 (T/T0 = P/P0 = 1)
-    return u0
-
 def reshape_C(rxn,cik:List[float])->List[List[float]]:
     c:List[List[float]] = rxn.zero_C()
     k = 0
@@ -605,27 +596,40 @@ def rhs_fixed(t,u,rxn,Da,T,P,rho0):
 # Define RHS of differential system of eqns #
 #############################################
 
-def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
+def rhs(t,u,rxn,scale,thermal):
     
     # Extract variables
     Fi = u[:I] # phase mass fractions
     cik = u[I:I+K] # endmember mass fractions
 
     h0 = scale["h"]
+    h0 = scale["h"]
     rho0 = scale["rho"]
+    Da = scale["Da"]
 
-    zs = z0 + t*h0
-    shortening = zs/z0
-    Ps = crustal_rho * gravity * zs / 1e5
-    Ts, q_s = geotherm_steady(z0/L0,
-        L0*shortening,
-        shortening,
-        Ts=T_surf,
+    L0 = thermal["L0"]
+    z0 = thermal["z0"]
+    As = thermal["As"]
+    hr0 = thermal["hr0"]
+    k = thermal["k"]
+    Ts = thermal["Ts"]
+    Tlab = thermal["Tlab"]
+
+    # limiting depth to some value (e.g. 200 km) required here. If python tries to take a very large timestep
+    # we will be out of bounds for the thermodynamic database
+    z_t = min(200e3, z0 + t*h0)
+
+    shortening_t = z_t/z0
+    P_t = crustal_rho * gravity * z_t / 1e5 # bar
+    T_t, q_s = geotherm_steady(z0/L0,
+        L0*shortening_t,
+        shortening_t,
+        Ts=Ts,
         Tlab=Tlab,
-        k=conductivity,
+        k=k,
         A=As,
-        hr0=hr0)
-
+        hr0=hr0) # K
+    
     # reshape C
     C = rxn.zero_C() # object with correct shape
     Kis = 0
@@ -637,16 +641,16 @@ def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
     Cs = [np.maximum(np.asarray(C[i]), eps*np.ones(len(C[i]))) for i in range(len(C))]
     Cs = [np.asarray(Cs[i])/sum(Cs[i]) for i in range(len(Cs))]
 
-    rhoi = np.array(rxn.rho(Ts, Ps, Cs)) # phase densities $\rho_i$
+    rhoi = np.array(rxn.rho(T_t, P_t, Cs)) # phase densities $\rho_i$
     V = np.sum(Fi/rhoi) # total volume
     
     # regularize F by adding eps
-    Fis = np.asarray(Fi)
+    Fis = np.asarray(Fi) + eps
     Fis = Fi + eps
 
     # Get dimensionless Gammas from reaction
-    Gammai = np.asarray(rxn.Gamma_i(Ts,Ps,Cs,Fi))
-    gamma_ik = rxn.Gamma_ik(Ts,Ps,Cs,Fi)
+    Gammai = np.asarray(rxn.Gamma_i(T_t,P_t,Cs,Fi))
+    gamma_ik = rxn.Gamma_ik(T_t,P_t,Cs,Fi)
     Gammaik = np.zeros(K)
     sKi = 0
     for i in range(I):
@@ -664,7 +668,6 @@ def rhs(t,u,rxn,scale,Da,L0,z0,As,hr0,conductivity,T_surf,Tlab):
             du[I+sKi+k] = Da*rho0*GikcGi*V/Fis[i]
         sKi += _Kis[i]
 
-
     return du
 
 ############################################
@@ -676,8 +679,6 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     L0 = scenario["L0"]
     As = scenario["As"]
     hr0 = scenario["hr0"]
-    T0 = scenario["T0"]
-    P0 = scenario["P0"] 
     cik0 = scenario["cik0"]
     Fi0 = scenario["Fi0"]
     rho0 = scenario["rho0"]
@@ -690,48 +691,53 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     # Set reaction's characteristic Arrhenius temperature (T_r)
     rxn.set_parameter("T0",Tr)
 
-    scale= {"rho":rho0, "h":h0}
-
     # Set up vector of initial conditions
-    u0 = get_u0(Fi0,cik0)
+    u0 = np.empty(I+K) # [...I phases, ...K endmembers]
+    u0[:I] = Fi0 # intial phase mass fractions
+    u0[I:I+K] = cik0 # initial endmember mass fractions
 
-    # Rescale damkohler number in case the end time is not 1
-    _da = Da * end_t
-    args = (rxn,scale,_da,L0,z0,As,hr0,k,Ts,Tlab)
+    scale = {"rho":rho0, "h":h0, "Da":Da}
+    thermal = {"L0":L0, "z0":z0, "As":As,"hr0":hr0,"k":k,"Ts":Ts,"Tlab":Tlab}
+    args = (rxn, scale, thermal)
 
     # Solve IVP using BDF method
     sol = solve_ivp(rhs, [0, end_t], u0, args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol, events=None)
     
     # resample solution
-    t = np.linspace(0,end_t,1000)
-    y = sol.sol(t)
-
-    # Dimensionalize back T,P
-    T = y[-2]*scale["T"] # K
-    P = y[-1]*scale["P"] # bar
+    times = np.linspace(0,end_t,1000)
+    y = sol.sol(times)
 
     Fi_times  = y[:I].T # vector for each timestep
-    cik_times = y[I:I+K].T # 2d array for each timestep
-    
+    cik_times = y[I:I+K].T # 2d ragged array for each timestep
     Cs_times = [reshape_C(rxn,cik) for cik in cik_times] # vector for each timestep
 
+    # Back-calculate depth, T, P, and rho
+    depth_m_times = z0 + times*h0
+    shortening_times = depth_m_times/z0
+    T_times = [geotherm_steady(
+        z0/L0,
+        L0*shortening,
+        shortening,
+        Ts=Ts,
+        Tlab=Tlab,
+        k=conductivity,
+        A=As,
+        hr0=hr0)[0] for shortening in shortening_times]
+    P_times = crustal_rho*gravity*depth_m_times/1e5 # bar
+    
     # Calculate rho for each timestep as 1/sum_i(F_i/rho_i)
     # for which we need the endmember compositions as a vector for each phase (Cs_times)
-    rho = [1/sum(Fi_times[t]/rxn.rho(T[t], P[t], Cs))/10 for t,Cs in enumerate(Cs_times)]
+    rho_times = [1/sum(Fi_times[idx]/rxn.rho(T_times[idx], P_times[idx], Cs_times[idx]))/10. for idx,_ in enumerate(times)]
+    print("{} P_end = {:.2f} Gpa. T_end = {:.2f} K. DA = {}. Used {:n} steps.".format(sol.message,P_times[-1]/1e4,T_times[-1],Da,len(sol.t)))
 
-    print("{} P_end = {:.2f} Gpa. T_end = {:.2f} K. DA = {}. Used {:n} steps.".format(sol.message,P[-1]/1e4,T[-1],_da,len(sol.t)))
-
-    # Back-calculate depth from pressure
-    depth_m = (P*1e5) / gravity / crustal_rho
- 
-    scenario["T"] = T # K
-    scenario["P"] = P # bar
-    scenario["rho"] = np.asarray(rho) # g/cm3
+    scenario["T"] = np.asarray(T_times) # K
+    scenario["P"] = np.asarray(P_times) # bar
+    scenario["rho"] = np.asarray(rho_times) # g/cm3
     scenario["Fi"] = Fi_times # phase mass fractions
     scenario["cik"] = cik_times # endmember mass fractions
     scenario["Xik"] = np.asarray([rxn.C_to_X(c) for c in Cs_times], dtype="object") # endmember mol. fractions
-    scenario["z"] = depth_m
-    scenario["time"] = t # 
+    scenario["z"] = depth_m_times
+    scenario["time"] = times # 
     return scenario
 
 #####################################
@@ -970,7 +976,7 @@ for f in fluid_weakening:
         for i, obj in enumerate(outs_c):
             # get values from simulation
             composition = obj["composition"]
-            color=color_by_composition.get(composition, "black")
+            color = color_by_composition.get(composition, "black")
             setting = obj["setting"]
             T = obj["T"]
             P = obj["P"]
@@ -989,10 +995,10 @@ for f in fluid_weakening:
             
             # pull out drho and T of just the root
             root_drho = drho[is_root]
-            root_T= T[is_root]
+            root_T = T[is_root]
             
             # set up thickness variable
-            # note: n=1000 has to match how the solution 'y' was interpolated above
+            # note: n = 1000 has to match how the solution 'y' was interpolated above
             h = np.linspace(0,40e3,1000) # meters
 
             # allow root to thicken to 40 km, extending as needed with the final value from the simulation
@@ -1006,7 +1012,7 @@ for f in fluid_weakening:
             g = 9.81
             A_Mpa = 10.**3.3
             Q = 480.e3
-            n=3.4
+            n = 3.4
             
             # Wet olivine
             # A_Mpa = 1.9e3
@@ -1211,7 +1217,7 @@ for tectonic_setting in tectonic_settings:
         for axis in ['top','bottom','left','right']:
             [ax.spines[axis].set_linewidth(0.25) for label,ax in axes.items()]
   
-        rho_pyrolite=model_pyrolite_rho_gcc(T,P)
+        rho_pyrolite = model_pyrolite_rho_gcc(T,P)
 
         for i, obj in enumerate(outs_c):
             ax = axes[obj["composition"]]
