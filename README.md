@@ -35,13 +35,13 @@ It also includes the following dependencies:
 As a test, run the following command within the container:
 
 ```bash
-cd models && python3 parallel_profile.py
+cd models && ./profile_1d
 ```
 
-The paper's results can be replicated by running the following:
+The paper's results can be replicated by running the following (from the **models** directory):
 
 ```bash
-python3 parallel_experiment2.py -q
+./thickening_model -q
 ```
 
 ## Thermodynamic database
@@ -69,13 +69,13 @@ The `scripts/generate_reactions` and `scripts/generate_reactions_eclogite` files
 
 Model calculations are provided as Python scripts in the **models** directory as follows:
 
-- **parallel_experiment2.py** runs the reactive geodynamic model of crustal thickening.
-- **parallel_pd.py** generates a (_T_,_P_) pseudosection and plots reactive density compared with equilibrium (Perple_X) and mantle.
-- **parallel_profile.py** generates a 1-d profile through (_T_,_P_)-space for comparing reactive phases equilibrium.
+- **./thickening_model** runs the reactive geodynamic model of crustal thickening.
+- **./pseudosection** generates a (_T_,_P_) pseudosection and plots reactive density compared with equilibrium (Perple_X) and mantle.
+- **./profile_1d** generates a 1-d profile through (_T_,_P_)-space for comparing reactive phases equilibrium.
 - **damkohler-fit.ipynb** shows how Damkohler number is fit to empirical data.
 - **viscosity-B.ipynb** shows how viscosity coefficient _B_ is calculated for the Rayleigh-Taylor instability analysis.
 
-By default the **parallel_\*** scripts use all available CPU cores.
+By default the scripts use all available CPU cores.
 
 Arguments can be passed as follows to customize the model runs:
 
@@ -92,7 +92,7 @@ All arguments are optional.
 In most cases, you will use the `-c` argument to specifiy a bulk composition, provided that Perple_X data exist for it in the **perple_x/output/** folder (see below).
 The `-q` flag is useful for reducing computational time by avoiding unnecessarily large _Da_ values.
 
-The **parallel_experiment2.py** script will attempt to load the previous output from a **.pickle** file, if it exists. This is convenient for adding or modifying plots and other post-processing. To override this behavior, use the `-f` argument to force the model to re-calculate from scratch.
+The **thickening_model** script will attempt to load the previous output from a **.pickle** file, if it exists. This is convenient for adding or modifying plots and other post-processing. To override this behavior, use the `-f` argument to force the model to re-calculate from scratch.
 
 ### Model output
 

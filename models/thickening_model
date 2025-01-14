@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys,os
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'tcg_slb_database','python'))
 
@@ -78,7 +80,7 @@ cm = 1e-2
 save_output = False
 load_output = True
 
-reference = "parallel_experiment2"
+reference = "thickening_model"
 rxn_name = "eclogitization_2024_slb21_rx"
 
 # only phases greater than this fraction will be plotted

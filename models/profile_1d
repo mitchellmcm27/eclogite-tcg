@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys, os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'tcg_slb_database','python'))
@@ -14,7 +16,7 @@ from multiprocessing import Pool
 from python.perplex import ppx_point_composition, ppx_profile_data
 
 ### ------------ INPUTS -------------------
-reference= 'parallel_profile'
+reference= 'profile_1d'
 composition = 'hacker_2015_md_xenolith'
 rxn_name = 'eclogitization_2024_slb21_rx'
 
