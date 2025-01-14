@@ -4,7 +4,7 @@ using JSON
 include("perplex_api.jl")
 
 # Absolute path to Perple_X installation
-resourcepath = "/root/resources"
+resourcepath = "~/resources"
 perplexdir = joinpath(resourcepath,"perplex-stable")
 
 mode_basis = "vol"
@@ -107,7 +107,7 @@ for name in comp_names
     end
 
     T_range_1d = (650+273.15, 850+273.15) # Kelvin
-    P_range_1d = (5000, 30000) # bar
+    P_range_1d = (5000., 25000.) # bar
 
     T_point = 900+273.15 # K
     P_point = 2.0e4 # bar
@@ -121,7 +121,7 @@ for name in comp_names
     else
         # assume crust
         T_range_2d = (300+273.15, 1300+273.15) # Kelvin
-        P_range_2d = (5000, 30000) # bar
+        P_range_2d = (5000, 25000) # bar
         xnodes=40
         ynodes=40
     end
