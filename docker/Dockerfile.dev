@@ -16,8 +16,8 @@ RUN pip install --upgrade\
         numexpr==2.7.3\
         matplotlib==3.7.5\
         sympy==1.12\
-    && jill install 1.9 --upstream Official --confirm\
-    && julia -e 'using Pkg; Pkg.add(["JSON","StatGeochem"]);'
+    && jill install '"1.10"' --upstream Official --confirm\
+    && julia -e 'using Pkg; Pkg.add(["JSON","Plots"]); Pkg.add(name="StatGeochemBase",version="0.6.14");'
 
 RUN cd eclogite-tcg\
     # Set permissions
@@ -32,6 +32,7 @@ RUN cd eclogite-tcg\
     && git clone -n https://github.com/jadconnolly/Perple_X.git ~/resources/perplex-stable\
     && cd ~/resources/perplex-stable\
     && git checkout 1aeec2f4f5d31762ecc8a5abbcb6338046406306\
+    # && git checkout v7.1.9\
     && cd src\
     && make -j${nproc}\
     # copy files to the directory required by the Perple_X Julia interface
@@ -40,11 +41,14 @@ RUN cd eclogite-tcg\
     && cp -r datafiles/* .\
     && cp optionfiles/* .
 
-# R Stuff
-
-RUN apt-get update\
-    && apt-get install -y r-base\
-    && R -e "install.packages(c('tidyverse', 'ggthemes', 'colorspace', 'latex2exp','scales','directlabels','showtext'))"
+# override the perplex-datafiles to use the ones directly from perplex
+#RUN mkdir ~/perplex-datafiles\
+#    && cp -r ~/resources/perplex-stable/datafiles/* /root/perplex-datafiles\
+#    && cp -r ~/resources/perplex-stable/optionfiles/* /root/perplex-datafiles\
+#    && mkdir ~/.julia\
+#    && mkdir ~/.julia/artifacts\
+#    && echo '[df4de05a-b714-11e8-3c2a-c30fb13e804c]\nperplex-datafiles = "/root"' >> ~/.julia/artifacts/Overrides.toml\
+#    && julia -e 'using Pkg; Pkg.add("JSON"); Pkg.add(name="StatGeochem", version="0.8.2");'
 
 WORKDIR $TCG_HOME/eclogite-tcg
 

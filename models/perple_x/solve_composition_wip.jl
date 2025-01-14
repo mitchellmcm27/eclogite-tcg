@@ -1,11 +1,10 @@
-using StatGeochemBase
+using StatGeochem
 using JSON
-
-include("perplex_api.jl")
+#using Perple_X_jll
 
 # Absolute path to Perple_X installation
-resourcepath = "/root/resources"
-perplexdir = joinpath(resourcepath,"perplex-stable")
+#perplexdir = joinpath(resourcepath,"perplex-stable")
+scratchdir = "./output/"
 
 mode_basis = "vol"
 
@@ -14,18 +13,15 @@ force_pseudosection = false
 args = ARGS
 if "-f" in ARGS
     force_pseudosection = true
-    args = filter(x->x!="-f", args)
+    args = filter(x->x!="-f", ARGS)
 end
-
 compositions = JSON.parsefile("compositions.json")
+
 all_comp_names = collect(keys(compositions))
-comp_names = []
 if length(args)>0
-    for arg in args
-        global comp_names = vcat(comp_names, arg)
-    end
+    comp_names = args
 else 
-    global comp_names = all_comp_names
+    comp_names = all_comp_names
 end
 
 for name in comp_names
@@ -33,8 +29,8 @@ for name in comp_names
     composition_name = name
     comp = compositions[name]
     dataset = comp["dataset"] isa String ? comp["dataset"] : "stx21ver"
-    scratchdir = "./output/"
-    if dataset == "stx21ver"
+
+    if dataset == "stx21ver" || dataset == "stx24ver"
         if occursin("pyrolite",name) || occursin("harzburgite",name)
             println("excluding no phases")
             phases_exclude = []
@@ -145,26 +141,25 @@ for name in comp_names
 
     if force_pseudosection || !pseudosection_exists
         print("Solving pseudosection...\n")
-        perplex_build_vertex(perplexdir, scratchdir, oxide_comp,oxides, P_range_2d, T_range_2d,
+        perplex_configure_pseudosection(scratchdir, oxide_comp, oxides, P_range_2d, T_range_2d,
             dataset=dataset*".dat",
             xnodes=xnodes,
             ynodes=ynodes,
             excludes=excludes,
             solution_phases=solution_phases, 
             composition_basis=composition_basis, 
-            mode_basis=mode_basis, 
-            name=composition_name,
-            saturated_fluid=saturated_fluid
+            mode_basis=mode_basis
         )
-        perplex_pssect(perplexdir, scratchdir, name=composition_name)
+        #perplex_query_modes(perplexdir, scratchdir, name=composition_name)
+        print("Extracting density grid...\n")
+        perplex_query_system(scratchdir, include_fluid=include_fluid)
     end
 
     print("Extracting profile...\n")
-    perplex_werami_profile(perplexdir, scratchdir, P_range_1d, T_range_1d,name=composition_name)
-
-    print("Extracting density grid...\n")
-    perplex_werami_rho(perplexdir, scratchdir, include_fluid=include_fluid, name=composition_name)
+    perplex_query_modes(scratchdir, P_range_1d, T_range_1d)
 
     print("Extracting point...\n")
-    perplex_werami_point(perplexdir,scratchdir,P_point,T_point,name=composition_name)
+    perplex_query_modes(scratchdir, P_point, T_point)
+
+    mv("out1",composition_name)
 end
