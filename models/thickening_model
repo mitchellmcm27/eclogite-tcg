@@ -8,7 +8,7 @@ from python.tcg import get_reaction,get_names,x2c,phi2F
 import numpy as np
 import numpy.ma as ma
 from matplotlib import pyplot as plt
-import matplotlib.pyplot as plt
+from matplotlib import colormaps
 from pathlib import Path
 from multiprocessing import Pool
 import multiprocessing as mp
@@ -17,6 +17,7 @@ from scipy.integrate import solve_ivp
 from geotherm_steady import geotherm_steady
 import csv
 from typing import TypedDict,List,Tuple
+import gc      
 
 class bcolors:
     HEADER = '\033[95m'
@@ -30,7 +31,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 class TectonicSetting(TypedDict):
-    setting:str
+    label:str
     L0:float
     As:float
     hr0:float
@@ -49,6 +50,8 @@ class InputScenario(TectonicSetting):
     cik0:List[float]
     Fi0:List[float]
     rho0:float
+    thickening_var:str
+    setting_type:str
 
 class OutputScenario(InputScenario):
     T: List[float] # K
@@ -115,8 +118,8 @@ print(Das)
 # default end time (scaled) is 1
 end_t = 1.
 
-# prefix file path for saving plots
-prefix = None
+# selected PTt paths to run
+PTt_paths = None # defaults to all paths
 
 # Compositions
 compositions = [
@@ -125,6 +128,11 @@ compositions = [
     "hacker_2015_md_xenolith",
     "mackwell_1998_maryland_diabase"
 ]
+
+unstable_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
+
+thickening_var = None  # "tanh", "exponential"
+steepness_var = None # "steep", "shallow" 
 
 color_by_composition = {
     'mackwell_1998_maryland_diabase': '#00adee', #blue
@@ -142,7 +150,7 @@ abbrev_by_composition = {
 
 tectonic_settings: List[TectonicSetting] = [
     {
-        "setting": "a",
+        "label": "a",
         "L0": 55.e3,
         "As": 2.0e-6,
         "hr0": 13.e3,
@@ -151,7 +159,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },    
     {
-        "setting": "b",
+        "label": "b",
         "L0": 60.e3,
         "As": 1.95e-6,
         "hr0": 12.5e3,
@@ -160,7 +168,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },
     {
-        "setting": "c",
+        "label": "c",
         "L0": 65.5e3,
         "As": 1.9e-6,
         "hr0": 12.e3,
@@ -169,7 +177,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },
     {
-        "setting": "d",
+        "label": "d",
         "L0": 71.5e3,
         "As": 1.85e-6,
         "hr0": 11.5e3,
@@ -178,7 +186,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },
     {
-        "setting": "e",
+        "label": "e",
         "L0": 78.e3,
         "As": 1.8e-6,
         "hr0": 11.0e3,
@@ -187,7 +195,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },
     {
-        "setting": "f",
+        "label": "f",
         "L0": 85.e3,
         "As": 1.75e-6,
         "hr0": 10.5e3,
@@ -196,7 +204,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },
     {
-        "setting": "g",
+        "label": "g",
         "L0": 92.5e3,
         "As": 1.7e-6,
         "hr0": 10.e3,
@@ -205,7 +213,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },
     {
-        "setting":"h",
+        "label":"h",
         "L0": 102.5e3,
         "As": 1.65e-6,
         "hr0": 9.5e3,
@@ -214,7 +222,7 @@ tectonic_settings: List[TectonicSetting] = [
         "Tlab": 1330. + 273.15
     },
     {
-        "setting":"i",
+        "label":"i",
         "L0": 111.e3,
         "As": 1.6e-6,
         "hr0": 9.e3,
@@ -224,6 +232,17 @@ tectonic_settings: List[TectonicSetting] = [
     }
 ]
 
+# Adjust for P-T path steepness type
+for sett in tectonic_settings:
+    # "normal" => do nothing
+    if(steepness_var) == "shallow":
+        sett["As"] += 0.5e-6
+        sett["hr0"] += 1.0
+        sett["L0"] += 2.5e3
+    elif(steepness_var) == "steep":
+        sett["As"] -= 1e-6
+        sett["hr0"] -= 2.5
+        sett["L0"] -= 5.e3
 
 #######################
 # Parse CLI arguments #
@@ -238,7 +257,9 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--num_processes")
     parser.add_argument("-f", "--force", default=False, action="store_true")
     parser.add_argument("-e", "--end_time")
-    parser.add_argument("-p", "--prefix")
+    parser.add_argument("-p", "--PTt_path")
+    parser.add_argument("-t", "--thickening")
+    parser.add_argument("-s", "--steepness")
 
     args = parser.parse_args()
 
@@ -260,23 +281,38 @@ if __name__ == "__main__":
     if args.force:
         save_output = True
         load_output = False
-    if args.prefix is not None:
-        prefix = args.prefix
+    if args.PTt_path is not None:
+        PTt_paths = [args.PTt_path]
+    if args.thickening is not None:
+        print("Using thickening type {}".format(args.thickening))
+        thickening_var = args.thickening
+    if args.steepness is not None:
+        print("Using P-T steepness type {}".format(args.steepness))
+        steepness_var = args.steepness
+
 
 ##########################
 # Ready output directory #
 ##########################
 
-output_path = Path("output",reference,rxn_name,prefix) if prefix is not None else Path("output",reference,rxn_name)
+output_path = Path("output",reference,rxn_name)
 output_path.mkdir(parents=True, exist_ok=True)
 pickle_path = Path(output_path,"_outs.pickle")
+
+def save_current_fig(name, *args):
+    extras = ""
+    if(args):
+        extras = "_".join([s for s in args if s is not None])
+        extras = "_"+extras if extras else ""
+    plt.savefig(Path(output_path,"{}{}.pdf".format(name, extras)), metadata=pdf_metadata)
+    plt.savefig(Path(output_path,"{}{}.png".format(name, extras)), dpi=300)
 
 ######################################
 # Plot pressure-temperature profiles #
 ######################################
 
 fig = plt.figure(figsize=(5,7))
-cmap1 = plt.cm.get_cmap("coolwarm_r")
+cmap1 = colormaps["coolwarm_r"]
 ax1 = plt.gca()
 ax1.set_prop_cycle(plt.cycler("color", cmap1(np.linspace(0., 1., len(tectonic_settings)))))
 
@@ -304,6 +340,7 @@ for num_setting, setting in enumerate(tectonic_settings):
     depths = np.linspace(0,1)
     depths_sc = L0*depths
     P =  depths_sc * crustal_rho * gravity / 1e5
+    # initial steady-state geotherm
     T, qs0 = geotherm_steady(depths,
                         L0*shortening,
                         shortening,
@@ -317,6 +354,7 @@ for num_setting, setting in enumerate(tectonic_settings):
     p = plt.plot(T-273.15, depths_sc/1e3,linewidth=1, alpha=0.5)
     color = plt.gca().lines[-1].get_color()
     
+    # initial Moho temperature
     T0, _qs = geotherm_steady(z0/L0,
                     L0*shortening,
                     shortening,
@@ -327,6 +365,7 @@ for num_setting, setting in enumerate(tectonic_settings):
                     hr0=hr0)
     plt.plot(T0-273.15, z0/1e3,'.',color=color,alpha=1)
     
+    # final steady-state geotherm
     shortening = z1/z0
     T, qs1 = geotherm_steady(depths,
                         L0*shortening,
@@ -336,6 +375,8 @@ for num_setting, setting in enumerate(tectonic_settings):
                         k=conductivity,
                         A=As,
                         hr0=hr0,)
+    
+    # final Moho temperature
     T1, _qs = geotherm_steady(z0/L0,
                 L0*shortening,
                 shortening,
@@ -346,6 +387,7 @@ for num_setting, setting in enumerate(tectonic_settings):
                 hr0=hr0)
     plt.plot(T-273.15, depths_sc/1e3*shortening, "--", color=color,alpha=0.5,linewidth=1)
 
+    # intermediate Moho temperatures (assumes constant thickening rate)
     Tts = np.zeros(100)
     zts = np.zeros(100)
     for i,t in enumerate(np.linspace(0,1,100)):
@@ -361,7 +403,7 @@ for num_setting, setting in enumerate(tectonic_settings):
         Tts[i] = Tt
         zts[i] = z0*s
     
-    label = setting["setting"]
+    label = setting["label"]
 
     # T-z-t path
     plt.plot(Tts-273.15, zts/1.e3,'-',alpha=1,linewidth=1.2,color=color,label=label)
@@ -369,7 +411,7 @@ for num_setting, setting in enumerate(tectonic_settings):
     # points after shortening
     plt.plot(T1-273.15, z0/1e3*shortening,'.',color=color)
 
-    geotherm_latex_table["heading"][num_setting] = setting["setting"]
+    geotherm_latex_table["heading"][num_setting] = setting["label"]
     geotherm_latex_table["As"][num_setting] = As*1.e6
     geotherm_latex_table["L0"][num_setting] = L0/1.e3
     geotherm_latex_table["z0"][num_setting] = z0/1.e3
@@ -384,13 +426,11 @@ ax1.set_ylabel("depth (km)")
 ax1.set_xlabel("$T$ (°C)")
 
 ax1.invert_yaxis()
-plt.savefig(Path(output_path,"{}.{}".format("_PTt", "pdf")), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"{}.{}".format("_PTt", "png")))
+save_current_fig("_PTt", steepness_var)
 
 ax1.set_ylim([0,120])
 ax1.set_xlim([150,1300])
-plt.savefig(Path(output_path,"{}.{}".format("_PTt_inverted", "pdf")), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"{}.{}".format("_PTt_inverted", "png")))
+save_current_fig("_PTt_inverted", steepness_var)
 
 ############################################
 # Write LaTeX for 'tectonic setting' table #
@@ -425,7 +465,7 @@ $T_{{1}}$ & \\si{{\\degreeCelsius}} & {} \\\\
 
 )
 
-with open(Path(output_path,"_geotherms_table.tex"), "w") as fil:
+with open(Path(output_path,"_geotherms_table{}.tex".format("_"+steepness_var if steepness_var is not None else "")), "w") as fil:
     fil.writelines(table_body)
 
 ############################
@@ -441,7 +481,12 @@ for setting in tectonic_settings:
             scenario = setting.copy()
             scenario["Da"] = da
             scenario["composition"] = comp
+            scenario["thickening_var"] = thickening_var
             scenarios.append(scenario)
+
+# Filter down to only selected PTt paths (defaults to all)
+if PTt_paths is not None:
+    scenarios = [s for s in scenarios if s["label"] in PTt_paths]
 
 # Get reaction/phase/endmember parameters
 rxn = get_reaction(rxn_name)
@@ -466,6 +511,27 @@ def get_rho(rxn, Fi:List[float], cik:List[float], T:float, P:float)->float:
     rho = 1/sum(Fi/rhoi)/10.0 # g/cm3 
     return rho
 
+def get_depth_at_t(t, t_type):
+    if(t_type=="decay"):
+        return z0 + h0*(np.tanh(t/0.3))
+    if(t_type=="tanh"):
+        return z0 + h0*(1 + np.tanh((t-0.5)/0.15))/2.0
+    if(t_type=="exponential"):
+        # NOTE: np.expm1 calculates (e^x - 1) 
+        # with greater precision than np.exp(x)-1 for small x
+        return z0 + h0*(np.expm1(3.0*t))/(np.expm1(3.0))
+    # constant rate
+    return z0 + h0*t
+
+fig = plt.figure(figsize=(5,7))
+for t_type in ["decay","tanh","exponential",None]:
+    x = np.linspace(0,1)
+    y = (get_depth_at_t(x, t_type) - z0)/h0
+    plt.plot(x,y)
+save_current_fig("_thickening_curves")
+plt.close(fig)
+exit()
+
 # Get equilibrated initial condition (with cache to avoid repeating work)
 ic_cache = {}
 def get_initial_composition(T0:float,P0:float,composition_name:str)->Tuple[List[float],List[float],float]:
@@ -488,7 +554,7 @@ def get_initial_composition(T0:float,P0:float,composition_name:str)->Tuple[List[
     rho_a = get_rho(rxn,np.asarray(Fi_a),reshape_C(rxn,cik_a),T0,P0)*10.
     print(rho_a)
     args = (rxn,Da_eq,T0,P0,rho_a)
-    sol = solve_ivp(rhs_fixed, [0, 1], u0_a, args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol)
+    sol = solve_ivp(rhs_equil, [0, 1], u0_a, args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol)
     
     Fi0 = sol.y[:I,-1] # -1 = final timestep
     cik0 = sol.y[I:I+K,-1]
@@ -558,7 +624,7 @@ def setup_ics(scenario:TectonicSetting)->InputScenario:
 # RHS to equilibrate at fixed P,T           #
 #############################################
 
-def rhs_fixed(t,u,rxn,Da,T,P,rho0):
+def rhs_equil(t,u,rxn,Da,T,P,rho0):
 
     Fi = u[:I] # phase mass fractions
     cik = u[I:I+K] # endmember mass fractions
@@ -605,7 +671,7 @@ def rhs_fixed(t,u,rxn,Da,T,P,rho0):
 # Define RHS of differential system of eqns #
 #############################################
 
-def rhs(t,u,rxn,scale,thermal):
+def rhs(t,u,rxn,scale,params):
     
     # Extract variables
     Fi = u[:I] # phase mass fractions
@@ -616,20 +682,23 @@ def rhs(t,u,rxn,scale,thermal):
     rho0 = scale["rho"]
     Da = scale["Da"]
 
-    L0 = thermal["L0"]
-    z0 = thermal["z0"]
-    As = thermal["As"]
-    hr0 = thermal["hr0"]
-    k = thermal["k"]
-    Ts = thermal["Ts"]
-    Tlab = thermal["Tlab"]
+    L0 = params["L0"]
+    z0 = params["z0"]
+    As = params["As"]
+    hr0 = params["hr0"]
+    k = params["k"]
+    Ts = params["Ts"]
+    Tlab = params["Tlab"]
 
-    # limiting depth to some value (e.g. 200 km) required here. If python tries to take a very large timestep
-    # we will be out of bounds for the thermodynamic database
-    z_t = min(200e3, z0 + t*h0)
-
+    # Get the depth at t
+    z_t = get_depth_at_t(t, thickening_var)
+    # limiting depth to some large value (200 km) is required here. 
+    # If python tries to take a very large timestep we will be out of bounds for the thermodynamic database
+    z_t = min(200e3, z_t)
     shortening_t = z_t/z0
     P_t = crustal_rho * gravity * z_t / 1e5 # bar
+
+    # steady-state temperature at t
     T_t, q_s = geotherm_steady(z0/L0,
         L0*shortening_t,
         shortening_t,
@@ -701,13 +770,13 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     rxn.set_parameter("T0",Tr)
 
     # Set up vector of initial conditions
-    u0 = np.empty(I+K) # [...I phases, ...K endmembers]
+    u0 = np.empty(I+K) # [...I phases, ...K endmembers, depth]
     u0[:I] = Fi0 # intial phase mass fractions
     u0[I:I+K] = cik0 # initial endmember mass fractions
 
     scale = {"rho":rho0, "h":h0, "Da":Da}
-    thermal = {"L0":L0, "z0":z0, "As":As,"hr0":hr0,"k":k,"Ts":Ts,"Tlab":Tlab}
-    args = (rxn, scale, thermal)
+    params = {"L0":L0, "z0":z0, "As":As,"hr0":hr0,"k":k,"Ts":Ts,"Tlab":Tlab}
+    args = (rxn, scale, params)
 
     # Solve IVP using BDF method
     sol = solve_ivp(rhs, [0, end_t], u0, args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol, events=None)
@@ -721,7 +790,7 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
     Cs_times = [reshape_C(rxn,cik) for cik in cik_times] # vector for each timestep
 
     # Back-calculate depth, T, P, and rho
-    depth_m_times = z0 + times*h0
+    depth_m_times = get_depth_at_t(times, thickening_var)
     shortening_times = depth_m_times/z0
     T_times = [geotherm_steady(
         z0/L0,
@@ -752,6 +821,7 @@ def run_experiment(scenario:InputScenario)->OutputScenario:
 #####################################
 # Deal with result loading & saving #
 #####################################
+
 scenarios_out = None
 if load_output:
     print("Looking for pickle file {}".format(pickle_path))
@@ -882,223 +952,185 @@ for out in scenarios_out:
         out["max_densification_rate_"+bin_width_string] = np.nanmax(bin_means)
 
 #############################
-# Write summary data to CSV #
-#############################
-
-with open(Path(output_path,'_summary.csv'),'w') as csvfile:
-    fieldnames = [
-        'setting',
-        'L0',
-        'z0',
-        'z1',
-        'As',
-        'hr0',
-        'k',
-        'Ts',
-        'Tlab',
-        'Da',
-        'composition',
-        'T0',
-        'T1',
-        'P0',
-        'rho0',
-        'critical_depth',
-        'critical_pressure',
-        'critical_temperature',
-        'plag_out_pressure',
-        'plag_out_temperature',
-        'plag_out_depth',
-        'qs0',
-        'qs1',
-        'effective_delta_rho',
-        'max_delta_rho',
-        'max_rho'
-    ]
-    for key,val in bin_widths.items():
-        fieldnames.append('max_densification_rate_'+key)
-    writer = csv.DictWriter(csvfile, fieldnames,extrasaction='ignore')
-    writer.writeheader()
-    for out in scenarios_out:
-        writer.writerow(out)
-    print("wrote CSV")
-
-#############################
 # Rayleigh--Taylor analysis #
-#############################
+############################
 
-unstable_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
-fluid_weakening = [1, 0.5, 0.25, 0.1] # Weaken B to account for fluids (base eclogite rheology is dry)
-da_factors = [10,300,1000,3000,10000]
+# Only makes sense if thickening is constant in rate 
 
-fig = plt.figure(figsize=(15,15))
+if(thickening_var is None):
+    fluid_weakening = [1, 0.5, 0.25, 0.1] # Weaken B to account for fluids (base eclogite rheology is dry)
+    da_factors = [10,300,1000,3000,10000]
 
-axes = fig.subplot_mosaic([
-    # 1   0.5  0.25  0.1
-    ['11','12','13','14'],  # 10
-    ['21','22','23','24'],  # 300
-    ['31','32','33','34'],  # 1000
-    ['41','42','43','44'],  # 3000
-    ['51','52','53','54']], # 10000
-    sharex=True,
-    sharey=True,
-) 
+    fig = plt.figure(figsize=(15,15))
 
-plt.ylim([1e5,5e7])
-plt.yscale("log")
-plt.xlim([0,40])
+    axes = fig.subplot_mosaic([
+        # 1   0.5  0.25  0.1
+        ['11','12','13','14'],  # 10
+        ['21','22','23','24'],  # 300
+        ['31','32','33','34'],  # 1000
+        ['41','42','43','44'],  # 3000
+        ['51','52','53','54']], # 10000
+        sharex=True,
+        sharey=True,
+    ) 
 
-for lb in ["51", "52", "53", "54"]:
-    ax = axes[lb]
-    ax.set_xlabel("Root thickness $h$ (km)")
-for lb in ["11", "21", "31", "41", "51"]:
-    ax = axes[lb]
-    ax.set_ylabel("Instability time $t_b$ (Myr)")
-for lb_idx,lb in enumerate(["11","12","13","14"]):
-    ax = axes[lb]
-    ax.set_title("$f={}$".format(fluid_weakening[lb_idx]))
-for lb_idx,lb in enumerate(["14","24","34","44","54"]):
-    ax = axes[lb]
-    ax.yaxis.set_label_position("right")
-    ax.set_ylabel("$Da = {}$".format(da_factors[lb_idx]), rotation=270, va="bottom")
+    plt.ylim([1e5,5e7])
+    plt.yscale("log")
+    plt.xlim([0,40])
 
-for f_idx, f in enumerate(fluid_weakening):
-    for da_idx, _da in enumerate(da_factors):
+    for lb in ["51", "52", "53", "54"]:
+        ax = axes[lb]
+        ax.set_xlabel("Root thickness $h$ (km)")
+    for lb in ["11", "21", "31", "41", "51"]:
+        ax = axes[lb]
+        ax.set_ylabel("Instability time $t_b$ (Myr)")
+    for lb_idx,lb in enumerate(["11","12","13","14"]):
+        ax = axes[lb]
+        ax.set_title("$f={}$".format(fluid_weakening[lb_idx]))
+    for lb_idx,lb in enumerate(["14","24","34","44","54"]):
+        ax = axes[lb]
+        ax.yaxis.set_label_position("right")
+        ax.set_ylabel("$Da = {}$".format(da_factors[lb_idx]), rotation=270, va="bottom")
 
-        ax_label = "{}{}".format(da_idx+1,f_idx+1)
-        ax = axes[ax_label]
+    for f_idx, f in enumerate(fluid_weakening):
+        for da_idx, _da in enumerate(da_factors):
 
-        v0_yr = v0 * yr # converted from m/s to m/yr
-        t_growth_log = np.logspace(5,8,num=200) # yr
-        h_growth_log = t_growth_log*v0_yr/1e3 # km
+            ax_label = "{}{}".format(da_idx+1,f_idx+1)
+            ax = axes[ax_label]
 
-        ax.plot(h_growth_log, t_growth_log,'k-')
-        ax.plot(h_growth_log*0.7, t_growth_log,'k--',alpha=0.7,linewidth=0.5)
-        ax.plot(h_growth_log*1.5,t_growth_log,'k--',alpha=0.7,linewidth=0.5)
-        ax.set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
+            v0_yr = v0 * yr # converted from m/s to m/yr
+            t_growth_log = np.logspace(5,8,num=200) # yr
+            h_growth_log = t_growth_log*v0_yr/1e3 # km
 
-        outs_c = sorted([o for o in scenarios_out 
-            if (o["composition"] in unstable_compositions and o["Da"]==_da)
-        ], key=lambda o: (o["composition"],o["setting"]))
+            ax.plot(h_growth_log, t_growth_log,'k-')
+            ax.plot(h_growth_log*0.7, t_growth_log,'k--',alpha=0.7,linewidth=0.5)
+            ax.plot(h_growth_log*1.5,t_growth_log,'k--',alpha=0.7,linewidth=0.5)
+            ax.set_prop_cycle(plt.cycler("linestyle", ['-','--',':']))
 
-        for i, obj in enumerate(outs_c):
-            # get values from simulation
-            composition = obj["composition"]
-            color = color_by_composition.get(composition, "black")
-            setting = obj["setting"]
-            T = obj["T"]
-            P = obj["P"]
-            max_temp = obj["T1"]
-            Da = obj["Da"]
-            critical_h = obj["critical_depth"]
-            rho_pyrolite = model_pyrolite_rho_gcc(T,P)*1000. # k/m3
-            densities = np.array(obj["rho"]) * 1000.
+            # The RT analysis only makes sens if thickening rate is constant 
+            outs_c = sorted([o for o in scenarios_out 
+                if (o["composition"] in unstable_compositions and o["Da"]==_da)
+            ], key=lambda o: (o["composition"],o["label"]))
 
-            # Define "root" as negatively buoyant portion (drho > 0)
-            drho = densities - rho_pyrolite
-            is_root = drho > 0.
-            max_drho = max(drho)
-            if(max_drho <= 0):
-                continue
-            
-            # pull out drho and T of just the root
-            root_drho = drho[is_root]
-            root_T = T[is_root]
-            
-            # set up thickness variable
-            # note: because we are shifting portions of arrays around,
-            # both the length of these arrays and the size of dt have to match how the solution 'y' was calculated
-            t_growth_yr = obj["time"]*t0/yr # 0 to 50e6 years
-            h = t_growth_yr/1e3  # 0 to 50e3 meteres
+            for i, obj in enumerate(outs_c):
+                # get values from simulation
+                composition = obj["composition"]
+                color = color_by_composition.get(composition, "black")
+                label = obj["label"]
+                T = obj["T"]
+                P = obj["P"]
+                max_temp = obj["T1"]
+                Da = obj["Da"]
+                critical_h = obj["critical_depth"]
+                rho_pyrolite = model_pyrolite_rho_gcc(T,P)*1000. # k/m3
+                densities = np.array(obj["rho"]) * 1000.
 
-            # allow root to thicken to 40 km, extending as needed with the final value from the simulation
-            root_drho_extended = np.ones(h.size)*root_drho[-1]
-            root_drho_extended[:root_drho.size] = root_drho
-            T_extended = np.ones(h.size)*root_T[-1]
-            T_extended[:root_T.size] = root_T
+                # Define "root" as negatively buoyant portion (drho > 0)
+                drho = densities - rho_pyrolite
+                is_root = drho > 0.
+                max_drho = max(drho)
+                if(max_drho <= 0):
+                    continue
+                
+                # pull out drho and T of just the root
+                root_drho = drho[is_root]
+                root_T = T[is_root]
+                
+                # set up thickness variable
+                # note: because we are shifting portions of arrays around,
+                # both the length of these arrays and the size of dt have to match how the solution 'y' was calculated
+                t_growth_yr = obj["time"]*t0/yr # 0 to 50e6 years
+                h = t_growth_yr/1e3  # 0 to 50e3 meteres
 
-            # Eclogite (Jin et al. 2001), following Molnar & Garzione, Zieman
-            Rgas = 8.3145
-            g = 9.81
-            A_Mpa = 10.**3.3
-            Q = 480.e3
-            n = 3.4
-            
-            # Wet olivine
-            # A_Mpa = 1.9e3
-            # Q = 420e3
-            # n = 3.
+                # allow root to thicken to 40 km, extending as needed with the final value from the simulation
+                root_drho_extended = np.ones(h.size)*root_drho[-1]
+                root_drho_extended[:root_drho.size] = root_drho
+                T_extended = np.ones(h.size)*root_T[-1]
+                T_extended[:root_T.size] = root_T
 
-            A = A_Mpa*(1e6)**(-n) # Pa^-3.4 s^-1
-            F = 3.**(-(n+1.)/2./n)*(2)**(1./n) # convert imposed strain fields in lab to a general geometry
-            B = f*F*(A)**(-1./n)*np.exp(Q/(n*Rgas*T_extended)) # Pa s = kg/m/s
+                # Eclogite (Jin et al. 2001), following Molnar & Garzione, Zieman
+                Rgas = 8.3145
+                g = 9.81
+                A_Mpa = 10.**3.3
+                Q = 480.e3
+                n = 3.4
+                
+                # Wet olivine
+                # A_Mpa = 1.9e3
+                # Q = 420e3
+                # n = 3.
 
-            # High-stress version of B (Evans & Goetze 1979, Molnar & Jones 2004)
-            eta0 = 5.7e11 # 1/s
-            sigma0 = 8.5e9 # Pa
-            Ha = 525.e3 # J/mol/K
-            E = 1.e-14 # sqrt of 2nd invariant strain rate (1/s)
-            B_Peierls = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*T_extended)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
-            
-            # Effective viscosity
-            B_eff = B
-            B_eff[T_extended<1000] = np.minimum(B[T_extended<1000], B_Peierls[T_extended<1000])
+                A = A_Mpa*(1e6)**(-n) # Pa^-3.4 s^-1
+                F = 3.**(-(n+1.)/2./n)*(2)**(1./n) # convert imposed strain fields in lab to a general geometry
+                B = f*F*(A)**(-1./n)*np.exp(Q/(n*Rgas*T_extended)) # Pa s = kg/m/s
 
-            # Time-dependent, moving average of drho and B_eff as root grows
-            avg_drho = np.array([np.average(root_drho_extended[:i+1]) for i, r in enumerate(root_drho_extended)])
-            avg_B_eff = np.array([np.average(B_eff[:i+1]) for i, b in enumerate(B_eff)])
+                # High-stress version of B (Evans & Goetze 1979, Molnar & Jones 2004)
+                eta0 = 5.7e11 # 1/s
+                sigma0 = 8.5e9 # Pa
+                Ha = 525.e3 # J/mol/K
+                E = 1.e-14 # sqrt of 2nd invariant strain rate (1/s)
+                B_Peierls = E**((n-1)/n) * sigma0 / (E*np.sqrt(3.0)) * (1. - np.sqrt((Rgas*T_extended)/(Ha) * np.log((np.sqrt(3.0)*eta0)/(2.0*E))) )
+                
+                # Effective viscosity
+                B_eff = B
+                B_eff[T_extended<1000] = np.minimum(B[T_extended<1000], B_Peierls[T_extended<1000])
 
-            # Growth rate and perturbation factors, Jull & Kelemen (2001)
-            Cp = 0.66 # strong layer, L>>h, following Zieman et al.
-            Zp0 = 0.33 # Assume 33% for initial perturbation amplitude, follows Zieman et al.
+                # Time-dependent, moving average of drho and B_eff as root grows
+                avg_drho = np.array([np.average(root_drho_extended[:i+1]) for i, r in enumerate(root_drho_extended)])
+                avg_B_eff = np.array([np.average(B_eff[:i+1]) for i, b in enumerate(B_eff)])
 
-            Timescale = (avg_B_eff/(2.*avg_drho*g*h))**n # Eq 7, timescale in seconds
-            tbp0 = ((n/Cp)**n)*((Zp0)**(1-n))/(n-1) # Eq 12, dimensionless time for 100% deflection
+                # Growth rate and perturbation factors, Jull & Kelemen (2001)
+                Cp = 0.66 # strong layer, L>>h, following Zieman et al.
+                Zp0 = 0.33 # Assume 33% for initial perturbation amplitude, follows Zieman et al.
 
-            exx = 1e-14 # horizontal strain rate, Behn et al. 2007, Zieman et al. 2023
-            epxx = exx * Timescale # by Eq. 8, dimensionless, approx 10
-            epxx0 = 1e-18 * Timescale # by Eq. 8, dimensionless, approx 1e-3
-            dtpdep = -0.5 # log units
+                Timescale = (avg_B_eff/(2.*avg_drho*g*h))**n # Eq 7, timescale in seconds
+                tbp0 = ((n/Cp)**n)*((Zp0)**(1-n))/(n-1) # Eq 12, dimensionless time for 100% deflection
 
-            exponent = np.double(-epxx/tbp0*dtpdep)
-            tbp = tbp0*(epxx/epxx0)**exponent # instability time, dimensionless
+                exx = 1e-14 # horizontal strain rate, Behn et al. 2007, Zieman et al. 2023
+                epxx = exx * Timescale # by Eq. 8, dimensionless, approx 10
+                epxx0 = 1e-18 * Timescale # by Eq. 8, dimensionless, approx 1e-3
+                dtpdep = -0.5 # log units
 
-            tb_yr = tbp*Timescale/yr # instability time, years
+                exponent = np.double(-epxx/tbp0*dtpdep)
+                tbp = tbp0*(epxx/epxx0)**exponent # instability time, dimensionless
 
-            #plt.figure(fig)
-            line, = ax.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
-            linestyle = line.get_linestyle()
-            ax.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], linestyle=linestyle, linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
-            ax.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)  
+                tb_yr = tbp*Timescale/yr # instability time, years
 
-            intersection_idx = np.argwhere(np.diff(np.sign(tb_yr - t_growth_yr))).flatten()
-            intersection_idx = intersection_idx[intersection_idx > 0]
-            if(intersection_idx.size):
-                intersection_idx = intersection_idx[0]
-                final_h = h[intersection_idx]
-                final_tb = tb_yr[intersection_idx]
-                final_T = T_extended[intersection_idx]
-            else:
-                final_h = np.nan
-                final_tb = np.nan
-                final_T = np.nan
+                #plt.figure(fig)
+                line, = ax.plot(h[h<=z1-critical_h]/1e3, tb_yr[h<=z1-critical_h], linewidth=(T_extended[-1]/1273.15)**2, color=color,label=composition)
+                linestyle = line.get_linestyle()
+                ax.plot(h[h>z1-critical_h]/1e3, tb_yr[h>z1-critical_h], linestyle=linestyle, linewidth=(T_extended[-1]/1273.15)**2, color=color,alpha=0.25)
+                ax.plot(z1-critical_h, (z1-critical_h)/v0/yr, 'o',color=color)  
 
-            if final_h + obj["critical_depth"] <= 80.e3:
-                ax.plot(final_h/1.e3, final_tb, 'o', color=color,markersize=4)
+                intersection_idx = np.argwhere(np.diff(np.sign(tb_yr - t_growth_yr))).flatten()
+                intersection_idx = intersection_idx[intersection_idx > 0]
+                if(intersection_idx.size):
+                    intersection_idx = intersection_idx[0]
+                    final_h = h[intersection_idx]
+                    final_tb = tb_yr[intersection_idx]
+                    final_T = T_extended[intersection_idx]
+                else:
+                    final_h = np.nan
+                    final_tb = np.nan
+                    final_T = np.nan
 
-            if(_da==10000):
-                obj["final_h_{}".format(f)] = final_h
-                obj["final_depth_{}".format(f)] = final_h + obj["critical_depth"]
-                obj["final_T_{}".format(f)] = final_T
-                obj["final_t_{}".format(f)] = final_tb + obj["critical_time"]
+                if final_h + obj["critical_depth"] <= 80.e3:
+                    ax.plot(final_h/1.e3, final_tb, 'o', color=color,markersize=4)
 
-plt.tight_layout()
-plt.savefig(Path(output_path,"_instability.pdf"), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"_instability.png"), dpi=300)
-plt.close(fig)
+                if(_da==10000):
+                    obj["final_h_{}".format(f)] = final_h
+                    obj["final_depth_{}".format(f)] = final_h + obj["critical_depth"]
+                    obj["final_T_{}".format(f)] = final_T
+                    obj["final_t_{}".format(f)] = final_tb + obj["critical_time"]
+
+    plt.tight_layout()
+    save_current_fig("_instability", steepness_var)
+    plt.close(fig)
 
 ###########################
 # Plot max. stable depths #
 ###########################
+
 
 fig = plt.figure(figsize=(20,7.5))
 axes = fig.subplot_mosaic([unstable_compositions])
@@ -1119,33 +1151,35 @@ for comp in unstable_compositions:
     color = color_by_composition.get(comp, "black")
 
     for _da in Das:
-        outs_c_da = sorted([out for out in scenarios_out if (out["composition"] == comp) and out["Da"]==_da], key=lambda out: out["setting"],reverse=True)
+        outs_c_da = sorted([out for out in scenarios_out if (out["composition"] == comp) and out["Da"]==_da], key=lambda out: out["label"],reverse=True)
         crit_T = np.array([o["critical_temperature"] for o in outs_c_da])
         crit_z = np.array([o["critical_depth"] for o in outs_c_da])
         s = ax.plot(crit_T-273.15, crit_z/1.e3,color=color,linewidth=0.75)
-        if _da==10000:
+        if _da==10000 and thickening_var=="constant":
             for f in fluid_weakening:
                 final_z = np.array([o["final_depth_{}".format(f)] for o in outs_c_da])
                 final_T = np.array([o["final_T_{}".format(f)] for o in outs_c_da])
                 ax.plot(final_T-273.15, final_z/1.e3, 'r--',alpha=np.sqrt(f))
         for obj in outs_c_da:
-            ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#888888',linewidth=0.25, label=obj['setting'])
+            ax.plot(obj["T"]-273.15, obj["z"]/1.e3, color='#888888',linewidth=0.25, label=obj['label'])
 
-plt.savefig(Path(output_path,"_critical.pdf"), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"_critical.png"), dpi=300)
+save_current_fig("_critical",thickening_var,steepness_var)
 plt.close(fig)
 
-##########################################################
-# Summary plots for every composition & tectonic setting #
-##########################################################
-    
+####################################################
+# Density & mineralogy plots for every composition #
+####################################################
+
+# NOTE: Matplotlib can run out of memory if we don't free resources
+
 for composition in compositions:
     for tectonic_setting in tectonic_settings:
-        setting = tectonic_setting["setting"]
 
-        # Find outputs with same setting & same composition,
+        label = tectonic_setting["label"]
+
+        # Find outputs with same label & same composition,
         # and sort by Da
-        outs_c = sorted([out for out in scenarios_out if (out["composition"] == composition and out["setting"] == setting)], key=lambda out: out["Da"])
+        outs_c = sorted([out for out in scenarios_out if (out["composition"] == composition and out["label"] == label)], key=lambda out: out["Da"])
         
         # grab 'constants' from first output
         base = outs_c[0] 
@@ -1174,7 +1208,7 @@ for composition in compositions:
 
         # Setup color cycling through all Das
         num_lines = len(_Das)
-        greys = plt.cm.get_cmap("Greys")
+        greys = colormaps["Greys"]
         axes["rho"].set_prop_cycle(plt.cycler("color", greys(np.linspace(0.2, 1, num_lines))))
         axes["An"].set_prop_cycle(plt.cycler("color", greys(np.linspace(0.2, 1, num_lines))))
         axes["Jd"].set_prop_cycle(plt.cycler("color", greys(np.linspace(0.2, 1, num_lines))))
@@ -1201,8 +1235,8 @@ for composition in compositions:
         ax2.invert_yaxis()
         ax2.set_ylabel("P (GPa)")
 
-        # Plot all phase mis (mass fractions)
-        cmaps = [plt.cm.get_cmap(name) for name in ["Blues", "YlOrBr", "Greens","Reds","Purples","copper_r"]]
+        # Plot all phase Fis (mass fractions)
+        cmaps = [colormaps[name] for name in ["Blues", "YlOrBr", "Greens","Reds","Purples","copper_r"]]
         for i,phase in enumerate(phase_names):
             ax = axes[phase]
             cmap = cmaps[i]
@@ -1213,6 +1247,13 @@ for composition in compositions:
             ax.set_xticks(np.arange(0,110,10))
             ax.set_xticklabels([None, None, 20, None, 40, None, 60, None, 80, None, None])
             ax.set_yticklabels([])
+            
+            ax2 = ax.secondary_yaxis("right")
+            t_depths = [get_depth_at_t(t, thickening_var) for t in np.linspace(0,1,num=26)]
+            t_labels = ["{:.0f}".format(t*t0/Myr) for t in np.linspace(0,1,num=26)]
+            ax2.set_yticks(t_depths)
+            ax2.set_yticklabels(labels=t_labels)
+            ax2.tick_params(axis='y', color='tab:blue', labelcolor='tab:blue')
             for j, obj in enumerate(outs_c):
                 ax.plot(obj["Fi"][:,i]*100, obj["z"])
 
@@ -1237,11 +1278,10 @@ for composition in compositions:
             axes["An"].plot(XAn, obj["z"])
             axes["Jd"].plot(XJd, obj["z"])
 
-        fig.suptitle("{}, {}, $v_0=${:.1f} km/Myr, $S0=${} 1/m".format(composition.capitalize().replace("_"," "), setting.replace("_",", "), v0/1e3*yr*1e6, S0),y=0.9)
-        plt.savefig(Path(output_path,"{}.{}.pdf".format(setting,composition)), metadata=pdf_metadata)
-        plt.savefig(Path(output_path,"{}.{}.png".format(setting,composition)), dpi=300)
+        fig.suptitle("{}, {}, $v_0=${:.1f} km/Myr, $S0=${} 1/m".format(composition.capitalize().replace("_"," "), label, v0/1e3*yr*1e6, S0),y=0.9)
+        save_current_fig(label,composition,thickening_var,steepness_var)
         plt.close(fig)
-
+        fig.clf()
 
 #####################################################
 # For each setting, plot each composition's density #
@@ -1251,7 +1291,7 @@ for composition in compositions:
 fig = plt.figure(figsize=(6.5,20))
 axes = fig.subplot_mosaic([
     #SDC   SLC   MGX    MD
-    ["11", "12", "13", "14"], # setting a
+    ["11", "12", "13", "14"], # label a
     ["21", "22", "23", "24"], # b
     ["31", "32", "33", "34"], # c
     ["41", "42", "43", "44"], # d
@@ -1286,13 +1326,13 @@ for lb_idx,lb in enumerate(["11","12","13","14"]):
 for lb_idx,lb in enumerate(["14","24","34","44","54","64","74","84","94"]):
     ax=axes[lb]
     ax.yaxis.set_label_position("right")
-    ax.set_ylabel("path {}".format(tectonic_settings[lb_idx]["setting"]), rotation=270, va="bottom")
+    ax.set_ylabel("path {}".format(tectonic_settings[lb_idx]["label"]), rotation=270, va="bottom")
 
 for t_idx, tectonic_setting in enumerate(tectonic_settings):
     for c_idx, composition in enumerate(compositions):
         ax_label = "{}{}".format(t_idx+1,c_idx+1)
         ax = axes[ax_label]
-        objs = [o for o in scenarios_out if (o["composition"] == composition and o["setting"] == tectonic_setting["setting"])]
+        objs = [o for o in scenarios_out if (o["composition"] == composition and o["label"] == tectonic_setting["label"])]
         for obj in objs:           
             color=color_by_composition.get(obj["composition"],"black")
             linewidth = 0.75 if obj["Da"] == np.max(Das) else 0.5
@@ -1304,7 +1344,6 @@ for t_idx, tectonic_setting in enumerate(tectonic_settings):
                 rho_pyrolite = model_pyrolite_rho_gcc(T,P)
                 ax.plot(rho_pyrolite, obj["z"]/1e3, "k", dashes=[10,4], linewidth=0.35)
 plt.tight_layout()
-plt.savefig(Path(output_path,"_density.pdf"), metadata=pdf_metadata)
-plt.savefig(Path(output_path,"_density.png"), dpi=300)
+save_current_fig("_density",thickening_var,steepness_var)
 plt.close(fig)
 
