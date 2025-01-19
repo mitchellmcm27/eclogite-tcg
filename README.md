@@ -86,6 +86,9 @@ Arguments can be passed as follows to customize the model runs:
 |   `-r [string]` | Reaction to use, by name           | eclogitization_2024_slb21_rx |
 |   `-q`          | "Quick" mode (_Da_ ≤ 1e4)      | False                        |
 |   `-f`          | Force model to re-calculate              | False                        |
+|   `-p`          | Specific PTt path (`a`,`b`, etc.)  | all                            |
+|   `-s`          | Steepness of T (`steep`,`shallow`) | None (normal)       |
+|   `-t`          | Thickening curve (`tanh`,`exponential`,`decay`) | None (linear)   |
 
 All arguments are optional.
 
