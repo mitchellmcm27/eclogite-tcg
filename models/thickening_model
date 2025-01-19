@@ -232,18 +232,6 @@ tectonic_settings: List[TectonicSetting] = [
     }
 ]
 
-# Adjust for P-T path steepness type
-for sett in tectonic_settings:
-    # "normal" => do nothing
-    if(steepness_var) == "shallow":
-        sett["As"] += 0.5e-6
-        sett["hr0"] += 1.0
-        sett["L0"] += 2.5e3
-    elif(steepness_var) == "steep":
-        sett["As"] -= 1e-6
-        sett["hr0"] -= 2.5
-        sett["L0"] -= 5.e3
-
 #######################
 # Parse CLI arguments #
 #######################
@@ -290,7 +278,6 @@ if __name__ == "__main__":
         print("Using P-T steepness type {}".format(args.steepness))
         steepness_var = args.steepness
 
-
 ##########################
 # Ready output directory #
 ##########################
@@ -310,6 +297,17 @@ def save_current_fig(name, *args):
 ######################################
 # Plot pressure-temperature profiles #
 ######################################
+
+# Adjust for P-T path steepness type
+for sett in tectonic_settings:
+    if(steepness_var) == "shallow":
+        sett["As"] += 0.5e-6
+        sett["hr0"] += 1.0e3
+        sett["L0"] += 2.5e3
+    elif(steepness_var) == "steep":
+        sett["As"] -= 0.73e-6
+        sett["hr0"] -= 1.25e3
+        sett["L0"] -= 3.e3
 
 fig = plt.figure(figsize=(5,7))
 cmap1 = colormaps["coolwarm_r"]
@@ -530,7 +528,6 @@ for t_type in ["decay","tanh","exponential",None]:
     plt.plot(x,y)
 save_current_fig("_thickening_curves")
 plt.close(fig)
-exit()
 
 # Get equilibrated initial condition (with cache to avoid repeating work)
 ic_cache = {}
@@ -694,7 +691,7 @@ def rhs(t,u,rxn,scale,params):
     z_t = get_depth_at_t(t, thickening_var)
     # limiting depth to some large value (200 km) is required here. 
     # If python tries to take a very large timestep we will be out of bounds for the thermodynamic database
-    z_t = min(200e3, z_t)
+    z_t = min(100e3, z_t)
     shortening_t = z_t/z0
     P_t = crustal_rho * gravity * z_t / 1e5 # bar
 
@@ -1155,7 +1152,7 @@ for comp in unstable_compositions:
         crit_T = np.array([o["critical_temperature"] for o in outs_c_da])
         crit_z = np.array([o["critical_depth"] for o in outs_c_da])
         s = ax.plot(crit_T-273.15, crit_z/1.e3,color=color,linewidth=0.75)
-        if _da==10000 and thickening_var=="constant":
+        if _da==10000 and thickening_var is None:
             for f in fluid_weakening:
                 final_z = np.array([o["final_depth_{}".format(f)] for o in outs_c_da])
                 final_T = np.array([o["final_T_{}".format(f)] for o in outs_c_da])
