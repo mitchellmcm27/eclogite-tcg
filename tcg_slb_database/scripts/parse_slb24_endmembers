@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+
+import os
+from pathlib import Path
+import re
+import csv
+
+lookup = {
+    # we use Perple_X abbrevations where they differ from SLB'24
+    'an': ['Anorthite', 'Ca(1)Al(2)Si(2)O(8)'],
+    'ab': ['Albite', 'Na(1)Al(1)Si(3)O(8)'],
+    'sp': ['MgSpinel', 'Mg(4)Al(8)O(16)'],
+    'hc': ['Hercynite', 'Fe(4)Al(8)O(16)'],
+    'smag': ['Magnetite', 'Fe(3)O(4)'],
+    'picr': ['PicroChromite', 'Mg(1)Cr(2)O(4)'],
+    'fo': ['Forsterite', 'Mg(2)Si(1)O(4)'],
+    'fa': ['Fayalite', 'Fe(2)Si(1)O(4)'],
+    'mgwa': ['MgWadsleyite', 'Mg(2)Si(1)O(4)'],
+    'fewa': ['FeWadsleyite', 'Fe(2)Si(1)O(4)'],
+    'mgri': ['MgRingwoodite', 'Mg(2)Si(1)O(4)'],
+    'feri': ['FeRingwoodite', 'Fe(2)Si(1)O(4)'],
+    'en': ['Enstatite', 'Mg(2)Si(2)O(6)'],
+    'fs': ['Ferrosilite', 'Fe(2)Si(2)O(6)'],
+    'mgts': ['MgTschermaks', 'Mg(1)Al(2)Si(1)O(6)'],
+    'odi': ['OrthoDiopside', 'Ca(1)Mg(1)Si(2)O(6)'],
+    'di': ['Diopside', 'Ca(1)Mg(1)Si(2)O(6)'],
+    'he': ['Hedenbergite', 'Ca(1)Fe(1)Si(2)O(6)'],
+    'cen': ['Clinoenstatite', 'Mg(2)Si(2)O(6)'],
+    'cats': ['CaTschermaks', 'Ca(1)Al(2)Si(1)O(6)'],
+    'jd': ['Jadeite', 'Na(1)Al(1)Si(2)O(6)'],
+    'acm': ['Acmite', 'Na(1)Fe(1)Si(2)O(6)'],
+    'wo': ['Wollastonite', 'Ca(1)Si(1)O(3)'],
+    'pwo': ['Pseudowollastonite', 'Ca(1)Si(1)O(3)'],
+    'mgc2': ['HPClinoenstatite', 'Mg(2)Si(2)O(6)'],
+    'fec2': ['HPClinoferrosilite', 'Fe(2)Si(2)O(6)'],
+    'capv': ['CaPerovskite', 'Ca(1)Si(1)O(3)'],
+    'mgil': ['MgAkimotoite', 'Mg(1)Si(1)O(3)'],
+    'feil': ['FeAkimotoite', 'Fe(1)Si(1)O(3)'],
+    'co': ['Corundum', 'Al(2)O(3)'],
+    'hem': ['Hematite', 'Fe(2)O(3)'],
+    'esk': ['Eskolaite', 'Cr(2)O(3)'],
+    'py': ['Pyrope', 'Mg(3)Al(2)Si(3)O(12)'],
+    'al': ['Almandine', 'Fe(3)Al(2)Si(3)O(12)'],
+    'gr': ['Grossular', 'Ca(3)Al(2)Si(3)O(12)'],
+    'mgmj': ['MgMajorite', 'Mg(4)Si(4)O(12)'],
+    'namj': ['NaMajorite', 'Na(2)Mg(1)Si(5)O(12)'],
+    'andr': ['Andradite', 'Ca(3)Fe(2)Si(3)O(12)'],
+    'knor': ['Knorrigite', 'Mg(3)Cr(2)Si(3)O(12)'],
+    'qtz': ['Quartz', 'Si(1)O(2)'],
+    'coes': ['Coesite', 'Si(1)O(2)'],
+    'st': ['Stishovite', 'Si(1)O(2)'],
+    'apbo': ['Seiferite','Si(1)O(2)'],
+    'mgpv': ['MgBridgmanite', 'Mg(1)Si(1)O(3)'],
+    'fepv': ['FeBridgmanite', 'Fe(1)Si(1)O(3)'],
+    'alpv': ['AlBridgmanaite', 'Al(2)O(3)'],
+    'hepv': ['FerricBridgmanite', 'Fe(2)O(3)'],
+    'hlpv': ['FerricBridgmaniteLS', 'Fe(2)O(3)'],
+    'fapv': ['FerricAlBridgmanite', 'Fe(1)Al(1)O(3)'],
+    'crpv': ['CrBridgmanite', 'Cr(2)O(3)'],
+    'mppv': ['MgPostPerovskite', 'Mg(1)Si(1)O(3)'],
+    'fppv': ['FePostPerovskite', 'Fe(1)Si(1)O(3)'],
+    'appv': ['AlPostPerovskite', 'Al(2)O(3)'],
+    'hppv': ['FerricPostPerovskite', 'Fe(2)O(3)'],
+    'cppv': ['CrPostPerovskite', 'Cr(2)O(3)'],
+    'pe':   ['Periclase', 'Mg(1)O(1)'],
+    'wu':   ['Wuestite', 'Fe(1)O(1)'],
+    'wuls': ['WuestiteLS', 'Fe(1)O(1)'],
+    'anao': ['alphaNaAlO2', 'Na(2)Al(2)O(4)'],
+    'mag':  ['Magnetite', 'Fe(3)O(4)'],
+    'mgcf': ['MgCaFerrite', 'Mg(1)Al(2)O(4)'],
+    'fecf': ['FeCaFerrite', 'Fe(1)Al(2)O(4)'],
+    'nacf': ['NaCaFerrite', 'Na(1)Al(1)Si(1)O(4)'],
+    'hmag': ['HighPressureMagnetite', 'Fe(3)O(4)'],
+    'crcf': ['CrCaFerrite','Mg(1)Cr(2)O(4)'],
+    'anao': ['AlphaNaO2', 'Na(2)Al(2)O(4)'],
+    'mnal': ['MgNAL', 'Na(1)Mg(2)Al(5)Si(1)O(12)'],
+    'fnal': ['FeNAL', 'Na(1)Fe(2)Al(5)Si(1)O(12)'],
+    'nnal': ['NaNAL', 'Na(3)Al(3)Si(3)O(12)'],
+    'ky':   ['Kyanite', 'Al(2)Si(1)O(5)'],
+    'neph': ['Nepheline', 'Na(1)Al(1)Si(1)O(4)'],
+    'fea':  ['alpha', 'Fe(1)'],
+    'feg':  ['gamma', 'Fe(1)'],
+    'fee':  ['epsilon','Fe(1)'],
+    # perplex has the following as well
+    'O2': ['O2','O(2)'],
+    'lppv': ['LS','Fe(2)O(3)'],
+}
+
+def parse_file(file_path, output_file):
+
+    em_dict = {}
+    with open(Path(file_path), 'r') as file:
+        contents = file.read()
+        # trim out comments, which begin with '|' ?
+        trimmed = '\n'.join([re.split(r'\|',line,1,flags=re.MULTILINE)[0].strip() for line in contents.split("\n")]).strip()
+
+        # split into sections delimited lines equal to 'end'
+        sections = re.split(r'^end$', trimmed, flags=re.MULTILINE)
+        
+        # get rid of blank sections
+        sections = [sec for sec in sections if sec]
+
+        fieldnames = []
+        # the first section is a type of header
+        for section in sections[1:]:
+            ''' (example sections)
+
+            aperov   EoS = 6 | Al_1Al_1O_3            Al-Perovskite                           
+            AL2O3(1)
+            G0 = -1517728.63 S0 = -5 V0 = -2.4944
+            c1 = 2424000 c2 = 4.1 c3 = 858.26509 c4 = 1.54222 c5 = 0.84088 c6 = 2.27510
+            m0 = 1691996.2 m1 = 1.55703
+            end
+
+            ab       EoS = 6 | Na_1Al_1Si_3O_8        Albite
+            Na2O(.5)Al2O3(.5)SiO2(3)
+            G0 = -3717909.79 S0 = -13 V0 = -10.0452
+            c1 = 597525.9 c2 = 2.77846 c3 = 719.0831 c4 = 0.57877 c5 = 1 c6 = 1.02954
+            m0 = 360000 m1 = 1.38571
+            end
+            '''
+            stripped = section.strip()
+
+            # grab the first 2 lines, which don't follow the normal pattern
+            line0, line1 = stripped.split("\n")[0:2]
+
+            line0_words = re.split(r'\s+',line0)
+            abbrev=line0_words[0]
+            eos=line0_words[3]
+            formula= lookup[abbrev][1]
+            name = lookup[abbrev][0]
+            print(abbrev)
+       
+            # grab the remaining lines, which are more regular
+            lines = stripped.split("\n")[2:]
+            # join the lines into a single line separated by white space
+            data = " ".join(lines[0:])
+       
+            vals = re.split(r'\s+',data)
+            # filter out "=" symbols
+            vals = [s for s in vals if s!='=']
+
+            # assume what remains is of the form [name1,val1,name2,val2,...]
+            varnames = [s for i,s in enumerate(vals) if not i%2]
+            varvals = [s for i,s in enumerate(vals) if i%2]
+
+            # make a values dictionary, converting to floats
+            d1 = {k:float(v) for k, v in zip(varnames,varvals)}
+            valsdict = {}
+            valsdict['name']    = name
+            valsdict['formula'] = formula
+            valsdict['a0']     =  d1.get('G0',0.0)
+            valsdict['n']      =  d1.get('S0',None)
+            valsdict['v0']     =  d1.get('V0',None)
+            valsdict['k00']    =  d1.get('c1',None)
+            valsdict['k0p']    =  d1.get('c2',None)
+            valsdict['theta0'] =  d1.get('c3',None)
+            valsdict['gamma0'] =  d1.get('c4',None)
+            valsdict['q']      =  d1.get('c5',None)
+            valsdict['refS']   =  0.
+            valsdict['T_r']    =  300.
+            valsdict['V_r']    =  d1.get('V0',None)
+            valsdict['TC0']    =  d1.get('t1',None)
+            valsdict['VD']     =  d1.get('t3',None)
+            valsdict['SD']     =  d1.get('t2',None)
+            valsdict['trans']  = d1.get('transition',None)
+            valsdict['type']   = d1.get('type',None)
+            if(valsdict.get('n', False)):
+                valsdict['n'] *= -1
+            if(valsdict.get('V_r', False)):
+                valsdict['V_r'] *= -1
+            if(valsdict.get('v0', False)):
+                valsdict['v0'] *= -1
+            valsdict['abbrev'] = abbrev
+            valsdict['eos'] = eos
+            em_dict[abbrev] = valsdict
+            if(lookup[abbrev]):
+                del lookup[abbrev]
+
+    print('Unused endmembers:')
+    print(lookup)
+    em_list = list(em_dict.values())
+    output = Path(output_file)
+    fieldnames = ['name', 'formula', 'a0', 'n', 'v0', 'k00', 'k0p', 'theta0' , 'gamma0', 'q'  , 'refS' , 'T_r'  , 'V_r', 'TC0', 'VD', 'SD', 'abbrev', 'eos', 'trans','type']
+    with open(output, 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(em_list)
+
+if __name__ == "__main__":
+    import argparse
+    import os
+    parser = argparse.ArgumentParser(\
+        description= """Parse an input Perple_X data file (stx11ver.dat or stx21ver.dat),
+                        and write the output to CSV.""")
+    parser.add_argument('-i', '--input_file', action='store', metavar='input_file', 
+                        type=str, required=True,
+                        help='Path to stx[11/21]ver.dat')
+    parser.add_argument('-o', '--output_file', action='store', metavar='output_file', 
+                        type=str, required=True,
+                        help='Output csv file.')
+    args = parser.parse_args()
+    parse_file(args.input_file, args.output_file)

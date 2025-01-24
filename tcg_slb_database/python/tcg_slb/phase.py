@@ -63,6 +63,8 @@ class SLBPhase:
         self.ns = len(sites)
         # number of pairs
         self.np = self.nc*(self.nc-1)//2
+        # number of distinguishable states (SLB 2024)
+  
         
         self.test_strs = ['['+repr(i)+'] > 0.0' for i in  range(self.nc)]
 
@@ -196,6 +198,7 @@ class SLBPhase:
     
     def G_default(self):
         return self.G_ss_default() + self.G_config_default() + self.G_excess_default() + self.G_landau_default()
+    
     def G_landau_2021(self):
         if self.TC0 is None: return 0
 
@@ -231,7 +234,7 @@ class SLBPhase:
         G_excess = self.nT*Xdsum*Phi.T*W*Phi
         G_excess = G_excess[0].simplify()
         return G_excess
-    
+
     def G_2021(self):
         return self.G_ss_default() + self.G_config_default() + self.G_excess_2021() + self.G_landau_2021()
 

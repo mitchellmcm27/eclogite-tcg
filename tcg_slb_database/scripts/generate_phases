@@ -16,7 +16,7 @@ def generate_phases(outdir, version):
   csvfile = '{}_phases.csv'.format(version)
   em_suffix = '_{}_em'.format(version)
   csv_headers = ['endmember_names','conversion_strs','X','d','W','sites','TC0','VD','SD']
-  if version == 'slb21':
+  if version == 'slb21' or version == 'slb24':
       csv_headers.append('W_V')
   def literal_return(val):
       try:
@@ -38,7 +38,7 @@ def generate_phases(outdir, version):
       endmember_names = values_dict.pop('endmember_names')
       endmember_names = [em+em_suffix for em in endmember_names]
       phase = SLBPhase(name, abbrev, reference, endmember_names, **values_dict)
-      if version == 'slb21':
+      if version == 'slb21' or version == 'slb24':
         phase.G = phase.G_2021()
       # else, use the default G
       print(phase.tofile(outdir))
