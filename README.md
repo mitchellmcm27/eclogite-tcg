@@ -2,15 +2,24 @@
 
 Cite the paper: TBD
 
-Cite the code: [https://doi.org/10.5281/zenodo.10835976](https://doi.org/10.5281/zenodo.10835976)
+Cite the code: https://doi.org/10.5281/zenodo.10835975
 
 ## Installation
 
 We provide a prebuilt Docker image (**registry.gitlab.com/mitchellmcm27/eclogite-tcg**), which is the fastest way to start running the models.
-The following downloads the image, starts an interactive container, and binds a local directory **./eclogite-output** to the output folder inside the container.
+Accessing model outputs on the local machine requires binding a directory to the Docker container.
+One way to do this is as follows.
+First, change to a directory in which the outputs will be stored, then run the command
 
 ```bash
-docker run -it --rm -v $PWD/eclogite-output:/home/tcg/shared/eclogite-tcg/models/output registry.gitlab.com/mitchellmcm27/eclogite-tcg
+docker run -it --rm -v $PWD:/home/tcg/shared registry.gitlab.com/mitchellmcm27/eclogite-tcg
+```
+
+The `-v` argument will bind **/home/tcg/shared/** in the container to the current directory on the local machine.
+Model outputs can then be transferred to the local machine by copying them to the **shared/** directory, e.g.,
+
+```bash
+cp -r models/output /home/tcg/shared
 ```
 
 Alternatively, users of [VS Code](https://code.visualstudio.com/) can clone this repository and open it in Docker using the provided **.devcontainers.json** (requires the Dev Containers extension).
@@ -21,29 +30,27 @@ It also includes the following dependencies:
 - a copy of this repository at **~/shared/eclogite-tcg/**,
 - *tcg_slb_database*, a convenient Python interface by Cian Wilson for the Stixrude & Lithgow-Bertelloni (2011, 2021) databases,
 - Python, Julia, and R languages,
-- [Perple_X](https://github.com/jadconnolly/Perple_X) (v7.0.10) equilibrium thermodynamics software
+- [Perple_X](https://github.com/jadconnolly/Perple_X) (v7.0.10)
 
 As a test, run the following command within the container:
 
 ```bash
-cd models && python3 parallel_profile.py
+cd models && ./profile_1d
 ```
 
-The paper's results can be replicated by running the following:
+The paper's results can be replicated by running the following (from the **models** directory):
 
 ```bash
-python3 parallel_experiment2.py -q
+./thickening_model -q
 ```
-
-Model outputs should appear on your local machine in a newly created **eclogite-output** directory.
 
 ## Thermodynamic database
 
-ThermoCodegen was used to generate a custom thermodynamic database using the data from Stixrude and Lithgow-Bertelloni (2021).
+ThermoCodegen generates a custom thermodynamic database using the Stixrude and Lithgow-Bertelloni (2021) data.
 The compiled database is included as **tcg_slb_database/database/tcg_slb21_database.tar.gz**.
-Although the scripts, source code, and data for generating this database are provided, doing so is not necessary as long as the **.tar.gz** file is in place.
+Although the scripts, source code, and data for generating this database are provided, doing so is not necessary as long as the **.tar.gz** file is present.
 
-## Reactions 
+## Eclogitization reactions 
 
 Descriptions of the eclogitization reactions are included as **\*.rxml** files.
 Because generating the C++ code for these reactions can take some time, the provided Docker image includes pre-built binaries.
@@ -62,12 +69,13 @@ The `scripts/generate_reactions` and `scripts/generate_reactions_eclogite` files
 
 Model calculations are provided as Python scripts in the **models** directory as follows:
 
-- **parallel_experiment2.py** runs the reactive geodynamic model of crustal thickening.
-- **parallel_pd.py** generates a (_T_,_P_) pseudosection and plots reactive density compared with equilibrium (Perple_X) and mantle.
-- **parallel_profile.py** generates a 1-d profile through (_T_,_P_)-space for comparing reactive phases equilibrium.
+- **./thickening_model** runs the reactive geodynamic model of crustal thickening.
+- **./pseudosection** generates a (_T_,_P_) pseudosection and plots reactive density compared with equilibrium (Perple_X) and mantle.
+- **./profile_1d** generates a 1-d profile through (_T_,_P_)-space for comparing reactive phases equilibrium.
 - **damkohler-fit.ipynb** shows how Damkohler number is fit to empirical data.
+- **viscosity-B.ipynb** shows how viscosity coefficient _B_ is calculated for the Rayleigh-Taylor instability analysis.
 
-By default the **parallel_\*** scripts use all available CPU cores.
+By default the scripts use all available CPU cores.
 
 Arguments can be passed as follows to customize the model runs:
 
@@ -78,17 +86,20 @@ Arguments can be passed as follows to customize the model runs:
 |   `-r [string]` | Reaction to use, by name           | eclogitization_2024_slb21_rx |
 |   `-q`          | "Quick" mode (_Da_ ≤ 1e4)      | False                        |
 |   `-f`          | Force model to re-calculate              | False                        |
+|   `-p`          | Specific PTt path (`a`,`b`, etc.)  | all                            |
+|   `-s`          | Steepness of T (`steep`,`shallow`) | None (normal)       |
+|   `-t`          | Thickening curve (`tanh`,`exponential`,`decay`) | None (linear)   |
 
 All arguments are optional.
 
-In most cases, you will use the `-c` argument to specifiy a bulk composition, provided that Perple_X data exist for it in the **perple_x/output** folder (see below).
-The `-q` flag is useful for reducing computational time.
+In most cases, you will use the `-c` argument to specifiy a bulk composition, provided that Perple_X data exist for it in the **perple_x/output/** folder (see below).
+The `-q` flag is useful for reducing computational time by avoiding unnecessarily large _Da_ values.
 
-The **parallel_experiment2.py** script will attempt to load the previous output from a **.pickle** file, if it exists. This is convenient for adding or modifying plots and other post-processing. To override this behavior, use the `-f` argument to force the model to re-calculate from scratch.
+The **thickening_model** script will attempt to load the previous output from a **.pickle** file, if it exists. This is convenient for adding or modifying plots and other post-processing. To override this behavior, use the `-f` argument to force the model to re-calculate from scratch.
 
 ### Model output
 
-All outputs are saved to the **models/output** directory.
+All outputs are saved to the **models/output/** directory.
 Outputs will be automatically grouped into subdirectories based on the name of the script, reaction, and composition.
 
 ### Model initialization using Perple_X
@@ -103,17 +114,18 @@ Perple_X equilibrium data are already included for the bulk compositions discuss
 Additional compositions are available in the **perple_x/compositions.json** file, which can be edited to add more bulk compositions.
 
 A Julia interface for programatically interacting with Perple_X (based on [StatGeochem.jl](https://osf.io/tjhmw/)) is included as **perplex_api.jl**.
-The script **solve_composition.jl** reads **compositions.json** file and passes the data to Perple_X.
+The script **solve_composition.jl** reads **compositions.json** file, passes the data to Perple_X, and produces the necessary files.
 
-To generate equilibrium data for a composition:
+To generate equilibrium data for a new composition:
 
 - Add major element oxide percentages to **models/perple_x/compositions.json** file, making sure to use the same format as the existing entries.
-- The dictionary key for each composition object must be unique, as it will be used to refer to the composition throughout the codebase.
+- Make sure that the dictionary key for each composition object is unique, as it will be used to identify the composition throughout the code.
 - Within the **perple_x** directory, run `julia solve_composition.jl [name]`, where `[name]` is the composition's dictionary key in **compositions.json** (e.g., `sammon_2021_lower_crust`).
 - Because a pseudosection calculation in Perple_X (the **vertex** program) can take some time, **vertex** only runs if its output data don't already exist. If **vertex** data need to be updated, use the `-f` argument with `solve_composition.jl` to force Perple_X to re-calculate everything from scratch.
 - After Perple_X completes successfully, the equilibrium data can be used in the reactive models using the `-c [name]` argument, as described above.
 
-### Additional plotting in R
+### Summary CSV file and plotting in R
 
-Some plots are more convenient to make in R after the models have been run.
-For this purpose, the model saves a summary of key outputs to a **_summary.csv** file, and an R script for reading and working with this file is provided in the **./r** directory.
+Some plots may be more convenient to make in R after the models have been run.
+For this purpose, the model saves a summary of key outputs to the **_summary.csv** file.
+An R script for reading and working with this file is provided in the **./r/** directory.

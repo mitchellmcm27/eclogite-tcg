@@ -194,9 +194,8 @@
   <potential name="G">
     <expression>
       <string_value type="code" language="python" lines="20">G = (
-R*T*(4.0*n1*log(n1/(n1 + n2)) + 2.0*n1*log((0.25*n1 + 0.875*n2)/(n1 +
-n2)) - 4.32878212015507*n1 + 4.0*n2*log(n2/(n1 + n2)) +
-7.0*n2*log((0.25*n1 + 0.875*n2)/(n1 + n2)) - 4.32878212015507*n2) +
+R*T*(4.0*n1*log(n1/(n1 + n2)) - 5.26350186852673*n1 +
+4.0*n2*log(n2/(n1 + n2)) - 5.26350186852673*n2) +
 2*d_0*d_1*n1*n2*(P*W_V_12 + W_12)/((d_0 + d_1)*(d_0*n1 + d_1*n2)) +
 n1*mu1(T, P) + n2*mu2(T, P) + Piecewise((n2*(3*P*V_D_1 - 3*S_D_1*T +
 2*S_D_1*T_C0_1)/3, T &gt;= P*V_D_1/S_D_1 + T_C0_1),
