@@ -13,14 +13,16 @@
 	// "forwardPorts": [],
 
 	// Uncomment the next line to run commands after the container is created - for example installing curl.
-	"postCreateCommand": "./build.sh"
+	//"postCreateCommand": "./build.sh",
 
 	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust
 	//"runArgs": ["--security-opt", "seccomp=unconfined", "--privileged"]
 
 	// Uncomment to use the Docker CLI from inside the container. See https://aka.ms/vscode-remote/samples/docker-from-docker.
 	// "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
-	//"workspaceFolder": "/home/tcg/eclogite-tcg/"
+
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/tcg/shared/eclogite-tcg,type=bind",
+	"workspaceFolder": "/home/tcg/shared/eclogite-tcg/"
 
 	// Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
 	// "remoteUser": "vscode"
