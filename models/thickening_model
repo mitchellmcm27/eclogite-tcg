@@ -267,15 +267,15 @@ def save_current_fig(name, *args):
 def geotherm_steady(m, # dimensionless depth between 0 and 1
                     L, # length scale
                     thickening = 1.0, # final/initial thickness
-                    Ttop=283.15, # K
-                    Tbot=1603.15, #K
+                    Ts=283.15, # K
+                    Tlab=1603.15, #K
                     k=3.35, # W/m/K
                     A=1.9e-6, # W/m3
                     hr0=10.e3, # km
                     ):
     hr = hr0 * thickening
-    b1 = Ttop
-    b2 = Tbot
+    b1 = Ts
+    b2 = Tlab
     b3 = hr**2*A/k
     b4 = hr*A*L/k
     a1 = b1 + b3
