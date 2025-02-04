@@ -6,23 +6,30 @@ Cite the code: https://doi.org/10.5281/zenodo.10835975
 
 ## Installation
 
-We provide a prebuilt Docker image (**registry.gitlab.com/mitchellmcm27/eclogite-tcg**), which is the fastest way to start running the models.
-Accessing model outputs on the local machine requires binding a directory to the Docker container.
-One way to do this is as follows.
-First, change to a directory in which the outputs will be stored, then run the command
+Docker is the fastest way to start running the models.
+
+First, clone this repository:
 
 ```bash
-docker run -it --rm -v $PWD:/home/tcg/shared registry.gitlab.com/mitchellmcm27/eclogite-tcg
+git clone https://gitlab.com/mitchellmcm27/eclogite-tcg.git
 ```
 
-The `-v` argument will bind **/home/tcg/shared/** in the container to the current directory on the local machine.
-Model outputs can then be transferred to the local machine by copying them to the **shared/** directory, e.g.,
+Within the repository, build an image from the provided Dockerfile, giving it a convenient tag **eclogite**:
 
 ```bash
-cp -r models/output /home/tcg/shared
+cd eclogite-tcg
+docker build -t eclogite -f ./docker/Dockerfile.dev
 ```
 
-Alternatively, users of [VS Code](https://code.visualstudio.com/) can clone this repository and open it in Docker using the provided **.devcontainers.json** (requires the Dev Containers extension).
+Then run the **eclogite** image, making sure to bind the **eclogite-tcg** directory so that any changes will be reflected on your local machine:
+
+```bash
+docker run -it --rm -v $PWD:/home/tcg/shared/eclogite-tcg eclogite
+```
+
+This will start an interactive shell in the container from which you can run the models.
+
+Users of [VS Code](https://code.visualstudio.com/) can clone this repository and open it in Docker using the provided **.devcontainers.json** (requires the Dev Containers extension). This will also take care of mounting folders and building the reactions.
 
 The Docker image includes prebuilt binaries for the thermodynamic database (endmembers and phases) and the reactions.
 It also includes the following dependencies:
@@ -53,7 +60,7 @@ Although the scripts, source code, and data for generating this database are pro
 ## Eclogitization reactions 
 
 Descriptions of the eclogitization reactions are included as **\*.rxml** files.
-Because generating the C++ code for these reactions can take some time, the provided Docker image includes pre-built binaries.
+Generating and compiling the C++ code for these reactions can take some time.
 If reactions are edited and need to be re-built, do so as follows:
 
 ```bash
@@ -61,7 +68,7 @@ cd tcg_slb_database
 scripts/generate_reactions_eclogite -v slb21
 scripts/build_reactions database/reactions/[name].rxml
 ```
-It is recommended, but not necessary, to pass the path to the exact **.rxml** file that needs to be built, as shown above.
+It is highly recommended, but not necessary, to pass the path to the exact **.rxml** file that needs to be built, as shown above.
 
 The `scripts/generate_reactions` and `scripts/generate_reactions_eclogite` files provide examples of how to generate a set of reaction descriptions (**.rxml** files) between endmembers defined in a specific thermodynamic database.
 
