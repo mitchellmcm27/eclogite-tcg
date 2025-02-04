@@ -14,7 +14,6 @@ from multiprocessing import Pool
 import multiprocessing as mp
 from python.perplex import model_pyrolite_rho_gcc, ppx_point_composition
 from scipy.integrate import solve_ivp
-from geotherm_steady import geotherm_steady
 import csv
 from typing import TypedDict,List,Tuple
 import gc      
@@ -29,39 +28,6 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-
-class TectonicSetting(TypedDict):
-    label:str
-    L0:float
-    As:float
-    hr0:float
-    k:float
-    Ts:float
-    Tlab:float
-
-class InputScenario(TectonicSetting):
-    Da:float
-    composition:str
-    T0:float
-    T1:float
-    qs0:float
-    qs1:float
-    P0:float
-    cik0:List[float]
-    Fi0:List[float]
-    rho0:float
-    thickening_var:str
-    setting_type:str
-
-class OutputScenario(InputScenario):
-    T: List[float] # K
-    P: List[float] # bar
-    rho: List[float]
-    Fi: List[List[float]]
-    cik: List[List[float]]
-    Xik: List[List[float]]
-    z: List[float]
-    time: List[float]
 
 ####################
 # Unit conversions #
@@ -148,7 +114,7 @@ abbrev_by_composition = {
     'sammon_2021_deep_crust': 'SDC' # yellow
 }
 
-tectonic_settings: List[TectonicSetting] = [
+tectonic_settings = [
     {
         "label": "a",
         "L0": 55.e3,
@@ -297,6 +263,27 @@ def save_current_fig(name, *args):
 ######################################
 # Plot pressure-temperature profiles #
 ######################################
+
+def geotherm_steady(m, # dimensionless depth between 0 and 1
+                    L, # length scale
+                    thickening = 1.0, # final/initial thickness
+                    Ttop=283.15, # K
+                    Tbot=1603.15, #K
+                    k=3.35, # W/m/K
+                    A=1.9e-6, # W/m3
+                    hr0=10.e3, # km
+                    ):
+    hr = hr0 * thickening
+    b1 = Ttop
+    b2 = Tbot
+    b3 = hr**2*A/k
+    b4 = hr*A*L/k
+    a1 = b1 + b3
+    a0 = b2 - a1 + b3*np.exp(-L/hr)
+    T = a0*m + a1 - b3*np.exp(-L*m/hr)
+    dTdx = lambda x: a0 + b4*np.exp(-L*x/hr)
+    q0 = k * dTdx(0)/L
+    return T, q0
 
 # Adjust for P-T path steepness type
 for sett in tectonic_settings:
@@ -472,7 +459,7 @@ with open(Path(output_path,"_geotherms_table{}.tex".format("_"+steepness_var if 
 
 # Create scenarios for all combinations 
 # of setting, composition, and Da       
-scenarios:List[InputScenario] = []
+scenarios = []
 for setting in tectonic_settings:
     for da in Das:
         for comp in compositions:
@@ -561,7 +548,7 @@ def get_initial_composition(T0:float,P0:float,composition_name:str)->Tuple[List[
     return cik0, Fi0, rho0
 
 # Get full initial conditions
-def get_initial_state(scenario:TectonicSetting)->InputScenario:
+def get_initial_state(scenario):
 
     composition_name = scenario['composition']
     L0 = scenario["L0"]
@@ -605,7 +592,7 @@ def get_initial_state(scenario:TectonicSetting)->InputScenario:
     return T0, P0, cik0, Fi0, rho0, qs0, T1, qs1
 
 # Gets all initial conditions and save to scenario
-def setup_ics(scenario:TectonicSetting)->InputScenario:
+def setup_ics(scenario):
     T0, P0, cik0, Fi0, rho0,qs0,T1,qs1 = get_initial_state(scenario)
     scenario["T0"] = T0
     scenario["T1"] = T1
@@ -749,7 +736,7 @@ def rhs(t,u,rxn,scale,params):
 # Function that runs scenarios in parallel #
 ############################################
 
-def run_experiment(scenario:InputScenario)->OutputScenario:
+def run_experiment(scenario):
     Da = scenario["Da"]
     L0 = scenario["L0"]
     As = scenario["As"]
