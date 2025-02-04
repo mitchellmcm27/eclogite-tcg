@@ -1,1 +1,0 @@
-FROM registry.gitlab.com/mitchellmcm27/eclogite-tcg:latest
