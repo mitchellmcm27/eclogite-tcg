@@ -7,7 +7,7 @@ library(directlabels)
 library(geomtextpath)
 
 library(showtext)
-font_add_google("Noto Sans", "Noto Sans")
+font_add_google("Inter", "Inter", db_cache = FALSE)
 
 source('theme-mcm.R')
 
@@ -46,7 +46,8 @@ bous_eclogite <- data.frame(
 ) %>%
   as_tibble
 
-dat <- read_csv('../models/output/thickening_model/eclogitization_2024_slb21_rx/_summary.csv') %>%
+dat <-
+  read_csv('../models/output/thickening_model/eclogitization_2024_slb21_rx/_summary.csv') %>%
   mutate(critical_depth = ifelse(critical_depth > 80e3, NA, critical_depth)) %>%
   mutate(S0 = 6000) %>%
   mutate(h0 = 50e3) %>%
@@ -81,7 +82,7 @@ dat %>%
     x = TeX(T0string),
     colour = TeX("log Da")
   ) +
-  facet_wrap( ~ composition)
+  facet_wrap(~ composition)
 
 ggsave('plots/critical_by_composition_alt.pdf', device = cairo_pdf)
 ggsave('plots/critical_by_composition_alt.png')
@@ -100,7 +101,9 @@ c1hi <- dat %>%
   filter(Da == max(Da)) %>%
   arrange(-critical_temperature)
 
-c1x <- append(c1low$critical_temperature - 273.15, c1hi$critical_temperature - 273.15)
+c1x <-
+  append(c1low$critical_temperature - 273.15,
+         c1hi$critical_temperature - 273.15)
 c1y <- append(c1low$critical_depth, c1hi$critical_depth)
 c1y[is.na(c1y)] <-  95.e3
 
@@ -113,7 +116,9 @@ c2hi <- dat %>%
   filter(Da == max(Da)) %>%
   arrange(-critical_temperature)
 
-c2x <- append(c2low$critical_temperature - 273.15, c2hi$critical_temperature - 273.15)
+c2x <-
+  append(c2low$critical_temperature - 273.15,
+         c2hi$critical_temperature - 273.15)
 c2y <- append(c2low$critical_depth, c2hi$critical_depth)
 c2y[is.na(c2y)] <- 95.e3
 
@@ -127,7 +132,9 @@ c3hi <- dat %>%
   filter(Da == max(Da)) %>%
   arrange(-critical_temperature)
 
-c3x <- append(c3low$critical_temperature - 273.15, c3hi$critical_temperature - 273.15)
+c3x <-
+  append(c3low$critical_temperature - 273.15,
+         c3hi$critical_temperature - 273.15)
 c3y <- append(c3low$critical_depth, c3hi$critical_depth)
 c3y[is.na(c3y)] <- 95.e3
 
@@ -176,7 +183,7 @@ ggplot() +
                             )),
     aes(x = critical_temperature - 273.15, y = critical_depth / 1e3),
     colour = "#1b75bb",
-    size=0.25
+    size = 0.25
   ) +
   geom_line(
     data = dat %>% filter(composition == felsic &
@@ -185,7 +192,7 @@ ggplot() +
                             )),
     aes(x = critical_temperature - 273.15, y = critical_depth / 1e3),
     colour = "#aa0000",
-    size=0.25
+    size = 0.25
   ) +
   scale_colour_manual(values = c("#be1e2d", "#6dcff6")) +
   scale_alpha(range = c(0.3, 1.0)) +
@@ -213,7 +220,7 @@ ggplot() +
     colour = TeX("log Da"),
     fill = 'Composition'
   ) +
-  theme(legend.position="none")
+  theme(legend.position = "none")
 
 ggsave(
   'plots/critical_shaded_ilc-md.pdf',
@@ -252,7 +259,7 @@ ggplot() +
                             )),
     aes(x = critical_temperature - 273.15, y = critical_depth / 1e3),
     colour = "#1bcc75",
-    size=0.25
+    size = 0.25
   ) +
   scale_colour_manual(values = c("#1ebe2d")) +
   scale_alpha(range = c(0.3, 1.0)) +
@@ -280,7 +287,7 @@ ggplot() +
     colour = TeX("log Da"),
     fill = 'Composition'
   ) +
-  theme(legend.position="none")
+  theme(legend.position = "none")
 
 ggsave(
   'plots/critical_shaded_mgx.pdf',
@@ -320,7 +327,7 @@ dat %>%
     x = TeX(T0string),
     colour = TeX("log Da")
   ) +
-  facet_wrap( ~ composition)
+  facet_wrap(~ composition)
 
 ggsave('plots/plag_out_depth_by_composition_alt.pdf', device = cairo_pdf)
 ggsave('plots/plag_out_depth_by_composition_alt.png')
@@ -369,7 +376,7 @@ base_plot <- dat %>%
   scale_colour_grey(start = 0.7, end = 0, name = "Da") +
   labs(y = TeX("Plag-out pressure (GPa)"),
        x = TeX("Temperature (°C)")) +
-  scale_y_continuous(breaks = seq(0, 3, by = .5), expand = c(0, 0), ) +
+  scale_y_continuous(breaks = seq(0, 3, by = .5), expand = c(0, 0),) +
   scale_x_continuous(breaks = seq(500, 900, by = 100), expand = c(0, 0)) +
   coord_cartesian(xlim = c(400, 1000), ylim = c(1, 2.5)) +
   theme(aspect.ratio = 1) +
@@ -379,7 +386,7 @@ base_plot <- dat %>%
                       "orange", "red", "darkred"
                     ))))
 
-base_plot + facet_wrap( ~ composition)
+base_plot + facet_wrap(~ composition)
 
 ggsave(
   'plots/plag_out_pt.pdf',
@@ -398,7 +405,7 @@ base_plot %+%
           composition == 'sammon_2021_lower_crust'
       )
   ) +
-  facet_wrap( ~ composition) +
+  facet_wrap(~ composition) +
   theme(legend.position = "bottom")
 
 ggsave(
@@ -453,7 +460,7 @@ base_plot <- dat %>%
   ) +
   geom_textline(aes(label = Da), size = 3, show.legend = FALSE) +
   scale_colour_grey(start = 0.8, end = 0, name = "Da") +
-  scale_y_continuous(breaks = seq(0, 3, by = .5), expand = c(0, 0), ) +
+  scale_y_continuous(breaks = seq(0, 3, by = .5), expand = c(0, 0),) +
   scale_x_continuous(breaks = seq(500, 900, by = 200), expand = c(0, 0)) +
   coord_cartesian(xlim = c(400, 1000), ylim = c(0.5, 2.5)) +
   labs(y = TeX("Critical pressure (GPa)"),
@@ -465,7 +472,7 @@ base_plot <- dat %>%
                       "orange", "red", "darkred"
                     ))))
 
-base_plot + facet_wrap( ~ composition)
+base_plot + facet_wrap(~ composition)
 
 ggsave(
   'plots/critical_pt.pdf',
@@ -532,69 +539,69 @@ dat %>%
       colour = (T0 - 273.15)
     )
   ) +
-  annotate(
-    "text",
-    x = .03,
-    y = 2.e2,
-    label = "fluid-poor",
-    colour = "#6699ff"
-  ) +
-  annotate(
-    "segment",
-    x = 0.003,
-    xend = 0.25,
-    y = 1.8e2,
-    yend = 1.8e2,
-    colour = '#aabbff',
-    size = 0.5,
-    arrow = arrow(
-      type = "closed",
-      length = unit(0.01, "npc"),
-      ends = "both"
-    )
-  ) +
-  annotate(
-    "text",
-    x = 1,
-    y = 2.e2,
-    label = "~1% H2O",
-    colour = "#ff6666"
-  ) +
-  annotate(
-    "segment",
-    x = 0.35,
-    xend = 3,
-    y = 1.8e2,
-    yend = 1.8e2,
-    colour = '#ffaaaa',
-    size = 0.5,
-    arrow = arrow(
-      type = "closed",
-      length = unit(0.01, "npc"),
-      ends = "both"
-    )
-  ) +
-  annotate(
-    "text",
-    x = 3e5,
-    y = 2e2,
-    label = "fluid-rich",
-    colour = "#66aa88"
-  ) +
-  annotate(
-    "segment",
-    x = 3e4,
-    xend = 3e6,
-    y = 1.8e2,
-    yend = 1.8e2,
-    colour = '#77aa99',
-    size = 0.5,
-    arrow = arrow(
-      type = "closed",
-      length = unit(0.01, "npc"),
-      ends = "both"
-    )
-  ) +
+#  annotate(
+#    "text",
+#    x = .03,
+#    y = 2.e2,
+#    label = "fluid-poor",
+#    colour = "#6699ff"
+#  ) +
+#  annotate(
+#    "segment",
+#    x = 0.003,
+#    xend = 0.25,
+#    y = 1.8e2,
+#    yend = 1.8e2,
+#    colour = '#aabbff',
+#    size = 0.5,
+#    arrow = arrow(
+#      type = "closed",
+#      length = unit(0.01, "npc"),
+#      ends = "both"
+#    )
+#  ) +
+#  annotate(
+#    "text",
+#    x = 1,
+#    y = 2.e2,
+#    label = "~1% H2O",
+#    colour = "#ff6666"
+#  ) +
+#  annotate(
+#    "segment",
+#    x = 0.35,
+#    xend = 3,
+#    y = 1.8e2,
+#    yend = 1.8e2,
+#    colour = '#ffaaaa',
+#    size = 0.5,
+#    arrow = arrow(
+#      type = "closed",
+#      length = unit(0.01, "npc"),
+#      ends = "both"
+#    )
+#  ) +
+#  annotate(
+#    "text",
+#    x = 3e5,
+#    y = 2e2,
+#    label = "fluid-rich",
+#3    colour = "#66aa88"
+#  ) +
+#  annotate(
+#    "segment",
+#    x = 3e4,
+#    xend = 3e6,
+#    y = 1.8e2,
+#    yend = 1.8e2,
+#    colour = '#77aa99',
+#    size = 0.5,
+#    arrow = arrow(
+#      type = "closed",
+#      length = unit(0.01, "npc"),
+#      ends = "both"
+#    )
+#  ) +
   geom_abline(
     intercept = log10(40),
     slope = 0,
@@ -622,7 +629,6 @@ dat %>%
     breaks = c(1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6),
     labels = trans_format('log10', math_format(10 ^ .x))
   ) +
-  
   annotation_logticks(
     sides = "l",
     size = 0.25,
@@ -630,17 +636,17 @@ dat %>%
     mid = unit(0.1, "cm"),
     long = unit(0.2, "cm")
   ) +
-  stat_summary(
-    fun.max = max,
-    fun.min = min,
-    fun = mean,
-    position = position_dodge(0.75),
-    linewidth = 4,
-    size = 0,
-    colour = "#eaeaea",
-    lineend = 'butt',
-    show.legend = FALSE
-  ) +
+  #stat_summary(
+  #  fun.max = max,
+  #  fun.min = min,
+  #  fun = mean,
+  #  position = position_dodge(0.75),
+  #  linewidth = 4,
+  #  size = 0,
+  #  colour = "#eaeaea",
+  #  lineend = 'butt',
+  #  show.legend = FALSE
+  #) +
   geom_point(position = position_jitterdodge(jitter.width = 0.0, dodge.width =
                                                0.75),
              size = 1.5) +

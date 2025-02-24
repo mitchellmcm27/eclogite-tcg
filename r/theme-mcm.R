@@ -1,7 +1,7 @@
 library(ggthemes)
 
 theme_mcm <- function() {
-  font <- "Noto Sans"
+  font <- "Inter"
   dgy <- "grey15"
   lgy <- "#cacaca"
   mrg <- 2
