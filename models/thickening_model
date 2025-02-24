@@ -936,6 +936,47 @@ for out in scenarios_out:
         out["max_densification_rate_"+bin_width_string] = np.nanmax(bin_means)
 
 #############################
+# Write summary data to CSV #
+#############################
+
+with open(Path(output_path,'_summary.csv'),'w') as csvfile:
+    fieldnames = [
+        'setting',
+        'L0',
+        'z0',
+        'z1',
+        'As',
+        'hr0',
+        'k',
+        'Ts',
+        'Tlab',
+        'Da',
+        'composition',
+        'T0',
+        'T1',
+        'P0',
+        'rho0',
+        'critical_depth',
+        'critical_pressure',
+        'critical_temperature',
+        'plag_out_pressure',
+        'plag_out_temperature',
+        'plag_out_depth',
+        'qs0',
+        'qs1',
+        'effective_delta_rho',
+        'max_delta_rho',
+        'max_rho'
+    ]
+    for key,val in bin_widths.items():
+        fieldnames.append('max_densification_rate_'+key)
+    writer = csv.DictWriter(csvfile, fieldnames,extrasaction='ignore')
+    writer.writeheader()
+    for out in scenarios_out:
+        writer.writerow(out)
+    print("wrote CSV")
+    
+#############################
 # Rayleigh--Taylor analysis #
 ############################
 
