@@ -1,8 +1,7 @@
 **This is the code associated with "Reactive thermodynamics of crustal eclogitization and foundering" by McMillan, M., Sim, S.J., and and Wilson, C.R.**
 
-Cite the paper: TBD
+Citation: https://doi.org/10.1016/j.epsl.2025.119302
 
-Cite the code: https://doi.org/10.5281/zenodo.10835975
 
 ## Installation
 
