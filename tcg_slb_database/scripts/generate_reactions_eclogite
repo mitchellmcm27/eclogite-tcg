@@ -34,6 +34,7 @@ def generate_reactions(outdir,version):
     qz = ['Quartz', 'Quartz']
     ky = ['Kyanite', 'Kyanite']
 
+
     phases=[
         'Clinopyroxene',
         'Orthopyroxene',
@@ -74,6 +75,196 @@ def generate_reactions(outdir,version):
     ]
     
     generate_reaction(outdir,version,'eclogitization_2024',phases,reactions)
+
+    phases=[
+        'Clinopyroxene',
+        'Orthopyroxene',
+        'Quartz',
+        'Feldspar',
+        'Garnet',
+        'Kyanite',
+        'Spinel',
+        'Olivine'
+    ]
+
+    fa = ['Olivine', 'Fayalite']
+    fo = ['Olivine', 'Forsterite']
+    mgsp = ['Spinel', 'MgSpinel']
+    herc = ['Spinel', 'Hercynite']
+
+    reactions=[
+        ([hed, oEn],[di, fs]), # Fe-Mg exchange, Cpx-Opx
+        ([pyp, fs],[alm, oEn]), # Fe-Mg exchange, Grt-Opx
+        ([pyp, hed], [alm, di]), # Ellis & Green 1979 (1), #Fe-Mg exchange, Grt-Cpx
+        
+        #The rest of the Cations: -Abdulaziz
+        ([oEn, fa], [fs, fo]),
+        ([oEn, herc], [fs, mgsp]),
+        ([pyp, herc], [alm, mgsp]),
+        ([fo, herc], [fa, mgsp]),
+        ([fo, alm], [fa, pyp]),
+        ([fo, hed], [fa, di]),
+        ([mgsp, hed], [herc, di]),
+        
+        ([oEn],[cEn]),
+        ([oDi],[di]),
+        ([cats, pyp], [gs, mgts]), # cation exchange with Tschermaks
+        ([an], [cats, qz]), # Paria et al (paragraph 2, cites Herzberg 1978), GR67b
+        ([an, oEn], [di, mgts, qz]), # Green & Ringwood 1967 (a) - GR67a
+        ([an, oEn], [pyp, di, qz]),  # GR67c, Paria et al (B)
+        ([an, oEn], [pyp, gs, qz]), # GR67d
+        ([an, fs], [alm, hed, qz]), # Paria et al (A), GR67c
+        ([an, fs], [alm, gs, qz]),  # GR67d
+        ([oEn, mgts], [pyp]), # Paria et al (paragraph 2, cites RWood 1974), GR67e, Wood & Banno 1973 (1)
+        ([oEn, cats], [gs, pyp]), # GR67f
+        ([ab], [jd, qz]), # Paria et al (paragraph 2, Reinsch 1977 cited in Newton 1983), GR67g
+        ([gs, pyp, qz], [di, ky]),
+        ([gs, alm, qz], [hed, ky]),
+        ([pyp, qz], [cEn, ky]),
+        ([gs, ky], [cats, qz]),
+        ([an], [ky, gs, qz]),  # Koziol et al 1988 (paragraph 1), GR67o
+        ([fs, mgts], [pyp, alm]), 
+        ([fs, cats], [gs, pyp, alm]),  
+        ([an, pyp], [mgts, gs, qz]), # swapped pyp and mgts because it gets swapped by TCG
+        ([di, an], [gs, pyp, qz]), 
+        ([hed, an], [gs, alm, qz]),
+        #([cats, an], [gs, qz]), # removed because this reduces to an = cats + qtz
+        ([an, cEn], [gs, pyp, qz]),
+
+        # added based on whiteboard discussion
+        ([mgsp, qz], [oEn, ky]), #
+        ([herc, qz], [fs, ky]), #
+        #20/9/2024 Added at lab
+        ([di,ky], [an, qz, fo]),
+        ([hed,ky], [an, qz, fa]),
+
+        # FROM THIS POINT THERE WERE NO CHANGES TO THE GRAPH
+        #Added on 24/9/2024 Might need to check their balancing. Phases graph doesn't look any different after running
+        ([fo, qz], [oEn]),
+        ([fa, qz], [fs]),
+
+        ([qz,ky,fo], [pyp]),
+        ([qz,ky,fa], [alm]),
+
+        #Added on 25/9/2024 during meeting
+
+        # NOTE 1: A valid solution is if there is 0 quartz, anorthite, or cats
+        # this is not good, so the reaction must be simplified
+        # cats + alm + qz = fa + fs + an + ky
+
+        # this is the Ca-bearing part of the reaction
+        # ([cats,qz],[an]), # but we already have this above
+
+        # This is the Fe-bearing part, which works
+        ([alm], [fa, fs, ky]),
+        
+        # Do the same thing for this reaction... cats + pyp + qz = fo + oEn, an, ky]),
+
+        # leaving the Mg-bearing part
+        ([pyp], [fo, oEn, ky]),
+
+        # NOTE 2: A solution to this rxn is when ky = fs = qz = 0 (not good)
+        #([gs, alm, ky, qz], [fa, fs, an]),
+
+        # but it simplifies to...
+        ([gs, alm], [fa, an]),
+
+        # Similarly for Mg
+        #([gs, pyp, ky, qz], [fo, oEn, an])
+        ([gs, pyp], [fo, an]),
+
+        # added 10-2-2024
+        # gt + cpx -> spinel + opx ?
+        ([pyp], [mgsp, oEn, qz]),
+        ([alm], [herc, fs, qz]),
+        #([namj, jd, ky], [mgsp, ab]),
+        
+        # added 8 - 20 - 2024
+        #([mgmj], [cEn]),
+        #([mgmj], [oEn])
+
+        ##### Mitchell 10-16-2024
+        ([di, ky], [mgsp, an, qz]),
+        ([hed, ky], [herc, an, qz]),
+
+        # MacGregor 1970, breaks down into 2 separate reactions each for Mg and Fe
+        # mgsp/herc + oEn/fs + di/hed = fo/fa + gs + pyp/alm
+        ## equation (1)
+        ([mgsp, oEn], [pyp, fo]),
+        ([herc, fs], [alm, fa]),
+        ## equation (1) but with anorthite and no olivine
+        ([mgsp, oEn, an], [gs, pyp]),
+        ([herc, fs, an], [gs, alm]),
+        ([mgsp, fs, an], [gs, alm, pyp]),
+        ([herc, oEn, an], [gs, alm, pyp]),
+
+        ## equation (2)
+        ([mgsp, di], [fo, pyp, gs]),
+        ([herc, hed] ,[fa, alm, gs]),
+        ## equation (2) but with anorthite and no olivine
+        ([mgsp, di, an], [gs, pyp]),#?
+        ([herc, hed, an], [gs, alm]),#?
+        ([mgsp, di, an], [gs, oEn]),
+        ([herc, hed, an], [gs, fs]),
+        
+        # sp + opx + fsp = cpx + gt
+        # involving anorthite
+        ([mgsp, oEn, an], [di, pyp]),
+        ([herc, fs, an], [hed, alm]),
+        ([mgsp, fs, an], [di, alm]),
+        ([herc, oEn, an], [hed, pyp]),
+
+        # involving albite
+        ([mgsp, oEn, ab], [jd, pyp]),
+        ([herc, fs, ab], [jd, alm]),
+        ([herc, oEn, ab], [jd, alm, pyp]),
+        ([mgsp, fs, ab], [jd, alm, pyp]),
+
+        # cpx + opx (+sp) (+qz) = plg + ol
+        # opx, cpx, sp
+        ([oEn, di, mgsp], [an, fo]),
+        ([oEn, di, herc], [an, fo, fa]),
+        ([oEn, hed, mgsp], [an, fo, fa]),
+        ([oEn, hed, herc], [an, fo, fa]),
+
+        #opx, cpx, sp
+        ([oEn, jd], [ab, fo]),
+        ([fs, jd], [ab, fa]),
+        #([jd, oEn, fs], [ab, fa, fo]),
+
+        # opx, cpx, sp
+        ([fs, hed, herc], [an, fa]),
+        ([fs, hed, mgsp], [an, fa, fo]),
+        ([fs, di, mgsp], [an, fa, fo]),
+        ([fs, di, herc], [an, fa, fo]),
+
+        # opx, opx, sp
+        ([oEn, fs, mgsp], [an, fo, fa]),
+        ([oEn, fs, herc], [an, fo, fa]),
+        ([di, hed, mgsp], [an, fo, fa]),
+        ([di, hed, herc], [an, fo, fa]),
+
+        # cpx, sp, qz
+        ([di, mgsp, qz], [an, fo]),
+        ([hed, herc, qz], [an, fa]),
+        ([di, herc, qz], [an, fo, fa]),
+        ([hed, mgsp, qz], [an, fo, fa]),
+        #^^^^^^ Mitchell 10-16-2024 
+
+        # vvvvvvvv Whiteboard etc. 10-30-2024
+        # Trying 
+        # ([mgts],[mgsp, qz]), # tried, did not help
+        # ([oEn, mgsp], [mgts, fo]), # tried, did not help
+        # ([fs, mgsp], [mgts, fa]), # didn't try
+        ([mgts, di],[cats, oEn]), # This helps!
+        # ([mgts, gs],[pyp, an]) # tried, did not help
+        # ([mgts, hed], [cats, fs, pyp]) # tried, did not help
+        ([pyp, ab, di], [oEn, jd, an]), # This helps
+        ([alm, ab, hed], [fs, jd, an]), # This helps
+        # ^^^^^^^^ Whiteboard etc. 10-30-2024
+    ]
+    
+    generate_reaction(outdir,version,'mafic',phases,reactions)
       
 def generate_reaction(outdir, version, name, phases, reactions):
     

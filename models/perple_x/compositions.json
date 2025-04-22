@@ -1,4 +1,44 @@
 {
+    "gulcher_venus":{
+        "basis": "wt",
+        "dataset": "stx21ver",
+        "elements": [
+            "Na2O",
+            "MgO",
+            "Al2O3",
+            "SiO2",
+            "CaO",
+            "FeO"
+        ],
+        "composition": [
+            2.2,
+            9.9,
+            16.5,
+            46.2,
+            7.9,
+            8.2
+        ]
+    },
+    "gulcher_morb":{
+        "basis": "wt",
+        "dataset": "stx21ver",
+        "elements": [
+            "Na2O",
+            "MgO",
+            "Al2O3",
+            "SiO2",
+            "CaO",
+            "FeO"
+        ],
+        "composition": [
+            2.61,
+            7.6,
+            15.2,
+            50.4,
+            11.5,
+            10.1
+        ]
+    },
     "bhowany_2018_hol2a": {
         "basis": "mol",
         "dataset": "stx21ver",
