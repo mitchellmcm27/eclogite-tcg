@@ -50,7 +50,7 @@ save_output = False
 load_output = True
 
 reference = "venus_model"
-rxn_name = "eclogitization_2024_slb21_rx"
+rxn_name = "mafic_slb21_rx"
 
 # only phases greater than this fraction will be plotted
 phasetol = 1.e-5 # default 1.e-2
@@ -91,29 +91,29 @@ PTt_paths = None # defaults to all paths
 
 # Compositions
 compositions = [
-    "sammon_2021_deep_crust",
-    "sammon_2021_lower_crust",
-    "hacker_2015_md_xenolith",
-    "mackwell_1998_maryland_diabase"
+    "mackwell_1998_maryland_diabase",
+    "gulcher_venus",
+    "gulcher_morb",
+    "xu_2008_basalt"
 ]
 
-unstable_compositions = ["sammon_2021_lower_crust","hacker_2015_md_xenolith","mackwell_1998_maryland_diabase"]
+unstable_compositions = compositions
 
 thickening_var = None  # "tanh", "exponential"
 steepness_var = None # "steep", "shallow" 
 
 color_by_composition = {
     'mackwell_1998_maryland_diabase': '#00adee', #blue
-    'hacker_2015_md_xenolith': '#3cb371', # green
-    'sammon_2021_lower_crust': '#be1e2d', # red
-    'sammon_2021_deep_crust': '#f6921e' # yellow
+    'gulcher_venus': '#3cb371', # green
+    'gulcher_morb': '#be1e2d', # red
+    'xu_2008_basalt': '#f6921e' # yellow
 }
 
 abbrev_by_composition = {
     'mackwell_1998_maryland_diabase': 'MD', #blue
-    'hacker_2015_md_xenolith': 'MGX', # green
-    'sammon_2021_lower_crust': 'SLC', # red
-    'sammon_2021_deep_crust': 'SDC' # yellow
+    'gulcher_venus': 'Ven', # green
+    'gulcher_morb': 'MORB', # red
+    'xu_2008_basalt': 'Bas' # yellow
 }
 
 tectonic_settings = [
@@ -928,24 +928,17 @@ for composition in compositions:
         ax2.set_ylabel("P (GPa)")
 
         # Plot all phase Fis (mass fractions)
-        cmaps = [colormaps[name] for name in ["Blues", "YlOrBr", "Greens","Reds","Purples","copper_r"]]
+        cmaps = [colormaps[name] for name in ["Blues", "YlOrBr", "Greens","Reds","Purples","copper_r", "Greys", "summer_r"]]
         for i,phase in enumerate(phase_names):
             ax = axes[phase]
             cmap = cmaps[i]
             ax.set_prop_cycle(plt.cycler("color", cmap(np.linspace(0.2, 1, num_lines))))
-            ax.set_xlim([0., z1/1.e3])
+            ax.set_xlim([0., 60.])
             ax.set_ylabel(None)
             ax.set_xlabel("{} (wt%)".format(phase))
             ax.set_xticks(np.arange(0,110,10))
-            ax.set_xticklabels([None, None, 20, None, 40, None, 60, None, 80, None, None])
+            ax.set_xticklabels([None, None, 20, None, 40, None, 60, None, 80, None, 100])
             ax.set_yticklabels([])
-            
-            ax2 = ax.secondary_yaxis("right")
-            t_depths = [z0 + t*h0 for t in np.linspace(0,1,num=26)]
-            t_labels = ["{:.0f}".format(t*t0/Myr) for t in np.linspace(0,1,num=26)]
-            ax2.set_yticks(t_depths)
-            ax2.set_yticklabels(labels=t_labels)
-            ax2.tick_params(axis='y', color='tab:blue', labelcolor='tab:blue')
             for j, obj in enumerate(outs_c):
                 ax.plot(obj["Fi"][:,i]*100, obj["z"])
 
