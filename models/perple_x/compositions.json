@@ -1,4 +1,67 @@
 {
+    "ito_basalt": {
+        "basis": "wt",
+        "dataset": "stx21ver",
+        "comment": "Ito and Kennedy Earth basalt NM5 Glass, renormalized without P2O5 and MnO (excludes TiO2 and K2O)",
+        "elements": [
+            "Na2O",
+            "MgO",
+            "Al2O3",
+            "SiO2",
+            "CaO",
+            "FeO"
+        ],
+        "composition": [
+            2.93,
+            7.62,
+            16.81,
+            50.12,
+            9.36,
+            11.44
+        ]
+    },
+    "semprich_basalt": {
+        "basis": "wt",
+        "dataset": "stx21ver",
+        "comment": "Fe2O3 converted to FeO",
+        "elements": [
+            "Na2O",
+            "MgO",
+            "Al2O3",
+            "SiO2",
+            "CaO",
+            "FeO"
+        ],
+        "composition": [
+            2.46,
+            8.29,
+            18.32,
+            49.85,
+            10.54,
+            9.01
+        ]
+    },
+    "semprich_peridotite": {
+        "basis": "wt",
+        "dataset": "stx21ver",
+        "comment": "Fe2O3 converted to FeO",
+        "elements": [
+            "Na2O",
+            "MgO",
+            "Al2O3",
+            "SiO2",
+            "CaO",
+            "FeO"
+        ],
+        "composition": [
+            0.3,
+            39.69,
+            3.53,
+            45.03,
+            3.08,
+            8.24
+        ]
+    },
     "gulcher_venus":{
         "basis": "wt",
         "dataset": "stx21ver",

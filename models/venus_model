@@ -67,20 +67,21 @@ h0 = 150. * km # total crustal thickening
 z1 = z0 + h0 # final Moho depth
 t0 = h0 / v0 # seconds
 Tr = 5500.+273.15 # reaction's characteristic temperature (T_r)
-crustal_rho = 3000. # kg/m3
+crustal_rho = 3000. # kg/m3, basalt
 gravity = 8.87 # m/s2
 Ps = 93 # bar, surface pressrure
 dPdt = (crustal_rho * gravity) * v0 * 1e-5 # bar/s
 Da_eq = 1e6
 
 # multiprocessing
-num_processes =  mp.cpu_count()
+num_processes = 8 # mp.cpu_count()
 
 # allows deterministic PDFs
 pdf_metadata = {'CreationDate': None}
 
 # Damkoehler numbers
 Das = [1e-2, 3e-2, 1e-1, 3e-1, 1e0, 3e0, 1e1, 3e1, 1e2, 3e2, 1e3, 3e3, 1e4, 3e4, 1e5, 3e5, 1e6]
+Das = [0.1, 1, 10, 100, 1000, 1e4, 1e5]
 print(Das)
 
 # default end time (scaled) is 1
@@ -93,8 +94,8 @@ PTt_paths = None # defaults to all paths
 compositions = [
     "mackwell_1998_maryland_diabase",
     "gulcher_venus",
-    "gulcher_morb",
-    "xu_2008_basalt"
+    "ito_basalt",
+    "semprich_basalt"
 ]
 
 unstable_compositions = compositions
@@ -106,56 +107,101 @@ color_by_composition = {
     'mackwell_1998_maryland_diabase': '#00adee', #blue
     'gulcher_venus': '#3cb371', # green
     'gulcher_morb': '#be1e2d', # red
-    'xu_2008_basalt': '#f6921e' # yellow
+    'ito_basalt': '#be1e2d', # red
+    'xu_2008_basalt': '#f6921e', # yellow
+    "semprich_basalt": '#f6921e' # yellow
 }
 
 abbrev_by_composition = {
     'mackwell_1998_maryland_diabase': 'MD', #blue
-    'gulcher_venus': 'Ven', # green
+    'gulcher_venus': 'Gul', # green
     'gulcher_morb': 'MORB', # red
-    'xu_2008_basalt': 'Bas' # yellow
+    "ito_basalt": 'Ito', # red
+    'xu_2008_basalt': 'Xu', # yellow
+    "semprich_basalt": 'Sem' # yellow
 }
-
 tectonic_settings = [
     {
         "label": "a",
-        "dTdz": 5.0,
-        "Ts": 737.0, # K, very hot
-        "Tlab": 1600., # K, same as earth?
-    },
+        "L0": 50.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
+    },    
     {
         "label": "b",
-        "dTdz": 10.0,
-        "Ts": 737.0,
-        "Tlab": 1600.,
-
+        "L0": 60.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
     },
     {
         "label": "c",
-        "dTdz": 15.0,
-        "Ts": 737.0,
-        "Tlab": 1600., 
-
+        "L0": 70.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
     },
     {
         "label": "d",
-        "dTdz": 20.0,
-        "Ts": 737.0,
-        "Tlab": 1600.,
+        "L0": 80.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
     },    
     {
         "label": "e",
-        "dTdz": 25.0,
-        "Ts": 737.0,
-        "Tlab": 1600.,
-    },   
+        "L0": 90.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
+    },
     {
         "label": "f",
-        "dTdz": 30.0,
-        "Ts": 737.0,
-        "Tlab": 1600.,
-    },     
-    
+        "L0": 100.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
+    },
+        {
+        "label": "g",
+        "L0": 110.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
+    },    
+    {
+        "label": "h",
+        "L0": 120.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
+    },
+    {
+        "label": "i",
+        "L0": 130.e3,
+        "As": 0.6e-6,
+        "hr0": 10.e3,
+        "k": 3.0,
+        "Ts": 464. + 273.15,
+        "Tlab": 1330. + 273.15
+    },
 ]
 
 #######################
@@ -214,6 +260,201 @@ def save_current_fig(name, *args):
     plt.savefig(Path(output_path,"{}{}.pdf".format(name, extras)), metadata=pdf_metadata)
     plt.savefig(Path(output_path,"{}{}.png".format(name, extras)), dpi=300)
 
+
+######################################
+# Plot pressure-temperature profiles #
+######################################
+
+def geotherm_steady(m, # dimensionless depth between 0 and 1
+                    L, # length scale
+                    thickening = 1.0, # final/initial thickness
+                    Ts=283.15, # K
+                    Tlab=1603.15, #K
+                    k=3.35, # W/m/K
+                    A=1.9e-6, # W/m3
+                    hr0=10.e3, # km
+                    ):
+    hr = hr0 * thickening
+    b1 = Ts
+    b2 = Tlab
+    b3 = hr**2*A/k
+    b4 = hr*A*L/k
+    a1 = b1 + b3
+    a0 = b2 - a1 + b3*np.exp(-L/hr)
+    T = a0*m + a1 - b3*np.exp(-L*m/hr)
+    dTdx = lambda x: a0 + b4*np.exp(-L*x/hr)
+    q0 = k * dTdx(0)/L
+    return T, q0
+
+# Adjust for P-T path steepness type
+for sett in tectonic_settings:
+    if(steepness_var) == "shallow":
+        sett["As"] += 0.6e-6
+        sett["hr0"] += 1.0e3
+        sett["L0"] += 2.5e3
+    elif(steepness_var) == "steep":
+        sett["As"] -= 0.73e-6
+        sett["hr0"] -= 1.25e3
+        sett["L0"] -= 3.e3
+
+fig = plt.figure(figsize=(5,7))
+cmap1 = colormaps["coolwarm_r"]
+ax1 = plt.gca()
+ax1.set_prop_cycle(plt.cycler("color", cmap1(np.linspace(0., 1., len(tectonic_settings)))))
+
+geotherm_latex_table = {
+    "heading": ["" for s in tectonic_settings],
+    "As": np.zeros(len(tectonic_settings)),
+    "L0": np.zeros(len(tectonic_settings)),
+    "z0": np.zeros(len(tectonic_settings)),
+    "hr0": np.zeros(len(tectonic_settings)),
+    "qs0": np.zeros(len(tectonic_settings)),
+    "qs1": np.zeros(len(tectonic_settings)),
+    "T0": np.zeros(len(tectonic_settings)),
+    "T1": np.zeros(len(tectonic_settings)),
+}
+
+for num_setting, setting in enumerate(tectonic_settings):
+    L0 = setting["L0"]
+    shortening = 1
+    hr0 = setting["hr0"]
+    conductivity = setting["k"]
+    Ts = setting["Ts"]
+    Tlab = setting["Tlab"]
+    As = setting["As"]
+
+    depths = np.linspace(0,1)
+    depths_sc = L0*depths
+    P =  depths_sc * crustal_rho * gravity / 1e5
+    # initial steady-state geotherm
+    T, qs0 = geotherm_steady(depths,
+                        L0*shortening,
+                        shortening,
+                        Ts=Ts,
+                        Tlab=Tlab,
+                        k=conductivity,
+                        A=As,
+                        hr0=hr0)
+
+
+    p = plt.plot(T-273.15, depths_sc/1e3,linewidth=1, alpha=0.5)
+    color = plt.gca().lines[-1].get_color()
+    
+    # initial Moho temperature
+    T0, _qs = geotherm_steady(z0/L0,
+                    L0*shortening,
+                    shortening,
+                    Ts=Ts,
+                    Tlab=Tlab,
+                    k=conductivity,
+                    A=As,
+                    hr0=hr0)
+    plt.plot(T0-273.15, z0/1e3,'.',color=color,alpha=1)
+    
+    # final steady-state geotherm
+    shortening = z1/z0
+    T, qs1 = geotherm_steady(depths,
+                        L0*shortening,
+                        shortening,
+                        Ts=Ts,
+                        Tlab=Tlab,
+                        k=conductivity,
+                        A=As,
+                        hr0=hr0,)
+    
+    # final Moho temperature
+    T1, _qs = geotherm_steady(z0/L0,
+                L0*shortening,
+                shortening,
+                Ts=Ts,
+                Tlab=Tlab,
+                k=conductivity,
+                A=As,
+                hr0=hr0)
+    plt.plot(T-273.15, depths_sc/1e3*shortening, "--", color=color,alpha=0.5,linewidth=1)
+
+    # intermediate Moho temperatures (assumes constant thickening rate)
+    Tts = np.zeros(100)
+    zts = np.zeros(100)
+    for i,t in enumerate(np.linspace(0,1,100)):
+        s = 1 + (z1/z0 - 1)*t
+        Tt, _q = geotherm_steady(z0/L0,
+                L0*s,
+                s,
+                Ts=Ts,
+                Tlab=Tlab,
+                k=conductivity,
+                A=As,
+                hr0=hr0)
+        Tts[i] = Tt
+        zts[i] = z0*s
+    
+    label = setting["label"]
+
+    # T-z-t path
+    plt.plot(Tts-273.15, zts/1.e3,'-',alpha=1,linewidth=1.2,color=color,label=label)
+
+    # points after shortening
+    plt.plot(T1-273.15, z0/1e3*shortening,'.',color=color)
+
+    geotherm_latex_table["heading"][num_setting] = setting["label"]
+    geotherm_latex_table["As"][num_setting] = As*1.e6
+    geotherm_latex_table["L0"][num_setting] = L0/1.e3
+    geotherm_latex_table["z0"][num_setting] = z0/1.e3
+    geotherm_latex_table["hr0"][num_setting] = hr0/1.e3
+    geotherm_latex_table["qs0"][num_setting] = qs0*1.e3
+    geotherm_latex_table["qs1"][num_setting] = qs1*1.e3
+    geotherm_latex_table["T0"][num_setting] = T0-273.15
+    geotherm_latex_table["T1"][num_setting] = T1-273.15
+
+plt.legend()
+ax1.set_ylabel("depth (km)")
+ax1.set_xlabel("$T$ (°C)")
+
+ax1.invert_yaxis()
+save_current_fig("_PTt", steepness_var)
+
+ax1.set_ylim([0,120])
+ax1.set_xlim([150,1300])
+save_current_fig("_PTt_inverted", steepness_var)
+
+
+############################################
+# Write LaTeX for 'tectonic setting' table #
+############################################
+
+table_body = """\\begin{{tabular}}{{cc{}}}
+\\toprule
+& & {} \\\\
+\\midrule
+$A_{{s}}$ & \\si{{\\uW\\per\\m\\cubed}} & {} \\\\
+$L_{{0}}$ & \\si{{\\km}} & {} \\\\
+$z_{{0}}$ & \\si{{\\km}} & {} \\\\
+$h_{{r0}}$ & \\si{{\\km}} & {} \\\\
+\\midrule
+$q_{{s0}}$ & \\si{{\\mW\\per\\m\\squared}} & {} \\\\
+$q_{{s1}}$ & \\si{{\\mW\\per\\m\\squared}} & {} \\\\
+$T_{{0}}$ & \\si{{\\degreeCelsius}} & {} \\\\
+$T_{{1}}$ & \\si{{\\degreeCelsius}} & {} \\\\
+\\bottomrule
+\\end{{tabular}}
+""".format(
+    "c"*len(geotherm_latex_table["heading"]),
+    " & ".join(geotherm_latex_table["heading"]),
+    " & ".join(["{:.2f}".format(val) for val in geotherm_latex_table["As"]]),
+    " & ".join(["{:.0f}".format(val) for val in geotherm_latex_table["L0"]]),
+    " & ".join(["{:.0f}".format(val) for val in geotherm_latex_table["z0"]]),
+    " & ".join(["{:.1f}".format(val) for val in geotherm_latex_table["hr0"]]),
+    " & ".join(["{:.0f}".format(val) for val in geotherm_latex_table["qs0"]]),
+    " & ".join(["{:.0f}".format(val) for val in geotherm_latex_table["qs1"]]),
+    " & ".join(["{:.0f}".format(val) for val in geotherm_latex_table["T0"]]),
+    " & ".join(["{:.0f}".format(val) for val in geotherm_latex_table["T1"]]),
+
+)
+
+with open(Path(output_path,"_geotherms_table{}.tex".format("_"+steepness_var if steepness_var is not None else "")), "w") as fil:
+    fil.writelines(table_body)
+
 ############################
 # Setup initial conditions #
 ############################
@@ -256,6 +497,26 @@ def get_rho(rxn, Fi:List[float], cik:List[float], T:float, P:float)->float:
     rho = 1/sum(Fi/rhoi)/10.0 # g/cm3 
     return rho
 
+def get_depth_at_t(t, t_type):
+    if(t_type=="decay"):
+        return z0 + h0*(np.tanh(t/0.3))
+    if(t_type=="tanh"):
+        return z0 + h0*(1 + np.tanh((t-0.5)/0.15))/2.0
+    if(t_type=="exponential"):
+        # NOTE: np.expm1 calculates (e^x - 1) 
+        # with greater precision than np.exp(x)-1 for small x
+        return z0 + h0*(np.expm1(3.0*t))/(np.expm1(3.0))
+    # constant rate
+    return z0 + h0*t
+
+fig = plt.figure(figsize=(5,7))
+for t_type in ["decay","tanh","exponential",None]:
+    x = np.linspace(0,1)
+    y = (get_depth_at_t(x, t_type) - z0)/h0
+    plt.plot(x,y)
+save_current_fig("_thickening_curves")
+plt.close(fig)
+
 # Get equilibrated initial condition (with cache to avoid repeating work)
 ic_cache = {}
 def get_initial_composition(T0:float,P0:float,composition_name:str)->Tuple[List[float],List[float],float]:
@@ -291,11 +552,40 @@ def get_initial_composition(T0:float,P0:float,composition_name:str)->Tuple[List[
 def get_initial_state(scenario):
 
     composition_name = scenario['composition']
-    dTdz0 = scenario['dTdz']
+    L0 = scenario["L0"]
+    As = scenario["As"]
+    hr0 = scenario["hr0"]
+    k = scenario["k"]
+    Ts = scenario["Ts"]
+    Tlab = scenario["Tlab"]
+    #dTdz0 = scenario['dTdz']
     Ts = scenario['Ts']
 
     # Initial temperature
-    T0 = Ts + dTdz0*z0/1000
+    #T0 = Ts + dTdz0*z0/1000
+    # Initial temperature
+    T0, qs0 = geotherm_steady(
+        z0/L0, # between 0 and 1
+        L0,
+        thickening=1.0, # gt 1
+        Ts=Ts,
+        Tlab=Tlab,
+        k=k,
+        A=As,
+        hr0=hr0
+    )
+    # Final temperature
+    thickening = z1/z0
+    T1, qs1 = geotherm_steady(
+        z0/L0, # between 0 and 1
+        L0*thickening,
+        thickening=thickening, # gt 1
+        Ts=Ts,
+        Tlab=Tlab,
+        k=k,
+        A=As,
+        hr0=hr0
+    )
 
     # Initial pressure
     P0 = Ps + crustal_rho * gravity * z0/1e5 # bar
@@ -303,12 +593,15 @@ def get_initial_state(scenario):
     # Initial composition (equilibrium at T0,P0)
     cik0, Fi0, rho0 = get_initial_composition(T0,P0,composition_name)
 
-    return T0, P0, cik0, Fi0, rho0
+    return T0, P0, cik0, Fi0, rho0, qs0, T1, qs1
 
 # Gets all initial conditions and save to scenario
 def setup_ics(scenario):
-    T0, P0, cik0, Fi0, rho0 = get_initial_state(scenario)
+    T0, P0, cik0, Fi0, rho0,qs0,T1,qs1 = get_initial_state(scenario)
     scenario["T0"] = T0
+    scenario["T1"] = T1
+    scenario["qs0"] = qs0
+    scenario["qs1"] = qs1
     scenario["P0"] = P0
     scenario["cik0"] = cik0
     scenario["Fi0"] = Fi0
@@ -366,7 +659,7 @@ def rhs_equil(t,u,rxn,Da,T,P,rho0):
 # Define RHS of differential system of eqns #
 #############################################
 
-def rhs(t,u,rxn,scale):
+def rhs(t,u,rxn,scale,params):
     
     # Extract variables
     Fi = u[:I] # phase mass fractions
@@ -375,18 +668,32 @@ def rhs(t,u,rxn,scale):
     h0 = scale["h"]
     rho0 = scale["rho"]
     Da = scale["Da"]
-    T0 = scale["T"]
-    z0 = scale["z"]
+    L0 = params["L0"]
+    z0 = params["z0"]
+    As = params["As"]
+    hr0 = params["hr0"]
+    k = params["k"]
+    Ts = params["Ts"]
+    Tlab = params["Tlab"]
 
     # Get the depth at t
-    z_t = z0 + h0*t # m
+    z_t = get_depth_at_t(t, thickening_var)
     # limiting depth to some large value (200 km) is required here. 
     # If python tries to take a very large timestep we will be out of bounds for the thermodynamic database
-    z_t = min(150e3, z_t)
-    P_t = Ps + crustal_rho * gravity * z_t / 1e5 # bar
+    z_t = min(100e3, z_t)
+    shortening_t = z_t/z0
+    P_t = crustal_rho * gravity * z_t / 1e5 # bar
 
     # steady-state temperature at t
-    T_t = T0
+    T_t, q_s = geotherm_steady(z0/L0,
+        L0*shortening_t,
+        shortening_t,
+        Ts=Ts,
+        Tlab=Tlab,
+        k=k,
+        A=As,
+        hr0=hr0) # K
+
     # reshape C
     C = rxn.zero_C() # object with correct shape
     Kis = 0
@@ -433,10 +740,16 @@ def rhs(t,u,rxn,scale):
 
 def run_experiment(scenario):
     Da = scenario["Da"]
+    L0 = scenario["L0"]
+    As = scenario["As"]
+    hr0 = scenario["hr0"]
     cik0 = scenario["cik0"]
     Fi0 = scenario["Fi0"]
     rho0 = scenario["rho0"]
-    T0 = scenario["T0"]
+    k = scenario["k"]
+    Ts = scenario["Ts"]
+    Tlab = scenario["Tlab"]
+    #T0 = scenario["T0"]
 
     rxn = get_reaction(rxn_name)
 
@@ -448,8 +761,9 @@ def run_experiment(scenario):
     u0[:I] = Fi0 # intial phase mass fractions
     u0[I:I+K] = cik0 # initial endmember mass fractions
 
-    scale = {"rho":rho0, "h":h0, "Da":Da, "T": T0, "z":z0}
-    args = (rxn, scale)
+    scale = {"rho":rho0, "h":h0, "Da":Da}
+    params = {"L0":L0, "z0":z0, "As":As,"hr0":hr0,"k":k,"Ts":Ts,"Tlab":Tlab}
+    args = (rxn, scale, params)
 
     # Solve IVP using BDF method
     sol = solve_ivp(rhs, [0, end_t], u0, args=args, dense_output=True, method="BDF", rtol=rtol, atol=atol, events=None)
@@ -464,8 +778,20 @@ def run_experiment(scenario):
 
     # Back-calculate depth, T, P, and rho
     depth_m_times = z0 + h0*times
-    P_times = Ps + dPdt*times/t0 # bar
-    T_times = [T0 for t in times]
+    #P_times = Ps + dPdt*times/t0 # bar
+    #T_times = [T0 for t in times]
+    depth_m_times = get_depth_at_t(times, thickening_var)
+    shortening_times = depth_m_times/z0
+    T_times = [geotherm_steady(
+        z0/L0,
+        L0*shortening,
+        shortening,
+        Ts=Ts,
+        Tlab=Tlab,
+        k=conductivity,
+        A=As,
+        hr0=hr0)[0] for shortening in shortening_times]
+    P_times = Ps + crustal_rho*gravity*depth_m_times/1e5 # bar
     
     # Calculate rho for each timestep as 1/sum_i(F_i/rho_i)
     # for which we need the endmember compositions as a vector for each phase (Cs_times)
@@ -530,6 +856,7 @@ for out in scenarios_out:
     # Process each scenario output
     rho = np.array(out["rho"]) # g/cm3
     depth_m = out["z"]
+    depth_lab = depth_m/z0 * out["L0"]
     T = out["T"] # K
     t = out["time"] # unitless
     P = out["P"] # bar
@@ -620,11 +947,18 @@ for out in scenarios_out:
 with open(Path(output_path,'_summary.csv'),'w') as csvfile:
     fieldnames = [
         'setting',
+        'L0',
         'z0',
         'z1',
+        'As',
+        'hr0',
+        'k',
+        'Ts',
+        'Tlab',
         'Da',
         'composition',
         'T0',
+        'T1',
         'P0',
         'rho0',
         'critical_depth',
@@ -633,6 +967,8 @@ with open(Path(output_path,'_summary.csv'),'w') as csvfile:
         'plag_out_pressure',
         'plag_out_temperature',
         'plag_out_depth',
+        'qs0',
+        'qs1',
         'effective_delta_rho',
         'max_delta_rho',
         'max_rho'
@@ -713,6 +1049,7 @@ if(thickening_var is None):
                 label = obj["label"]
                 T = obj["T"]
                 P = obj["P"]
+                max_temp = obj["T1"]
                 Da = obj["Da"]
                 critical_h = obj["critical_depth"]
                 rho_pyrolite = model_pyrolite_rho_gcc(T,P)*1000. # k/m3
@@ -879,6 +1216,7 @@ for composition in compositions:
         T = base["T"]
         P = base["P"]
         rho0 = base["rho0"]
+        L0 = base["L0"]
 
         _Das = [o["Da"] for o in outs_c]
         
@@ -981,8 +1319,10 @@ mosaic = [
     ["31", "32", "33", "34"], # c
     ["41", "42", "43", "44"], # d
     ["51", "52", "53", "54"], # e
-    ["61", "62", "63", "64"]] # f
-
+    ["61", "62", "63", "64"], # f
+    ["71", "72", "73", "74"], # g
+    ["81", "82", "83", "84"], # h
+    ["91", "92", "93", "94"]]# i
 axes = fig.subplot_mosaic(mosaic, sharex=True, sharey=True)
 
 [ax.set_prop_cycle(plt.cycler("color", greys(np.linspace(0.2, 1, num_lines)))) for label,ax in axes.items()]
