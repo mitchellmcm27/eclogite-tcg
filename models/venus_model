@@ -62,15 +62,14 @@ rtol = 1.e-5 # relative tolerance
 atol = 1.e-9 # absolute tolerance
 
 v0 = 1. * mm / yr # m/s
-z0  = 30. * km # initial Moho depth
-h0 = 150. * km # total crustal thickening
+z0  = 20. * km # initial Moho depth
+h0 = 80. * km # total crustal thickening
 z1 = z0 + h0 # final Moho depth
 t0 = h0 / v0 # seconds
 Tr = 5500.+273.15 # reaction's characteristic temperature (T_r)
 crustal_rho = 3000. # kg/m3, basalt
 gravity = 8.87 # m/s2
 Ps = 93 # bar, surface pressrure
-dPdt = (crustal_rho * gravity) * v0 * 1e-5 # bar/s
 Da_eq = 1e6
 
 # multiprocessing
@@ -92,10 +91,10 @@ PTt_paths = None # defaults to all paths
 
 # Compositions
 compositions = [
+    "sammon_2021_lower_crust",
+    "hacker_2015_md_xenolith",
+    "semprich_basalt",
     "mackwell_1998_maryland_diabase",
-    "gulcher_venus",
-    "ito_basalt",
-    "semprich_basalt"
 ]
 
 unstable_compositions = compositions
@@ -108,24 +107,28 @@ color_by_composition = {
     'gulcher_venus': '#3cb371', # green
     'gulcher_morb': '#be1e2d', # red
     'ito_basalt': '#be1e2d', # red
+    'sammon_2021_lower_crust': '#be1e2d', # red
     'xu_2008_basalt': '#f6921e', # yellow
-    "semprich_basalt": '#f6921e' # yellow
+    "semprich_basalt": '#f6921e', # yellow
+    'hacker_2015_md_xenolith': '#3cb371', # green
 }
 
 abbrev_by_composition = {
-    'mackwell_1998_maryland_diabase': 'MD', #blue
-    'gulcher_venus': 'Gul', # green
-    'gulcher_morb': 'MORB', # red
-    "ito_basalt": 'Ito', # red
-    'xu_2008_basalt': 'Xu', # yellow
-    "semprich_basalt": 'Sem' # yellow
+    "mackwell_1998_maryland_diabase": 'MD', #blue
+    "gulcher_venus": "Gul", # green
+    "gulcher_morb": "MORB", # red
+    "ito_basalt": "Ito", # red
+    "xu_2008_basalt": "Xu", # yellow
+    "semprich_basalt": "Sem", # yellow
+    "sammon_2021_lower_crust": "SLC", # red
+    "hacker_2015_md_xenolith": "MGX", # green
 }
 tectonic_settings = [
     {
         "label": "a",
         "L0": 50.e3,
-        "As": 0.6e-6,
-        "hr0": 10.e3,
+        "As": 0.9e-6,
+        "hr0": 12.e3,
         "k": 3.0,
         "Ts": 464. + 273.15,
         "Tlab": 1330. + 273.15
@@ -133,8 +136,8 @@ tectonic_settings = [
     {
         "label": "b",
         "L0": 60.e3,
-        "As": 0.6e-6,
-        "hr0": 10.e3,
+        "As": 0.7e-6,
+        "hr0": 12.0e3,
         "k": 3.0,
         "Ts": 464. + 273.15,
         "Tlab": 1330. + 273.15
@@ -142,7 +145,7 @@ tectonic_settings = [
     {
         "label": "c",
         "L0": 70.e3,
-        "As": 0.6e-6,
+        "As": 0.7e-6,
         "hr0": 10.e3,
         "k": 3.0,
         "Ts": 464. + 273.15,
@@ -150,58 +153,13 @@ tectonic_settings = [
     },
     {
         "label": "d",
-        "L0": 80.e3,
+        "L0": 85.e3,
         "As": 0.6e-6,
         "hr0": 10.e3,
         "k": 3.0,
         "Ts": 464. + 273.15,
         "Tlab": 1330. + 273.15
     },    
-    {
-        "label": "e",
-        "L0": 90.e3,
-        "As": 0.6e-6,
-        "hr0": 10.e3,
-        "k": 3.0,
-        "Ts": 464. + 273.15,
-        "Tlab": 1330. + 273.15
-    },
-    {
-        "label": "f",
-        "L0": 100.e3,
-        "As": 0.6e-6,
-        "hr0": 10.e3,
-        "k": 3.0,
-        "Ts": 464. + 273.15,
-        "Tlab": 1330. + 273.15
-    },
-        {
-        "label": "g",
-        "L0": 110.e3,
-        "As": 0.6e-6,
-        "hr0": 10.e3,
-        "k": 3.0,
-        "Ts": 464. + 273.15,
-        "Tlab": 1330. + 273.15
-    },    
-    {
-        "label": "h",
-        "L0": 120.e3,
-        "As": 0.6e-6,
-        "hr0": 10.e3,
-        "k": 3.0,
-        "Ts": 464. + 273.15,
-        "Tlab": 1330. + 273.15
-    },
-    {
-        "label": "i",
-        "L0": 130.e3,
-        "As": 0.6e-6,
-        "hr0": 10.e3,
-        "k": 3.0,
-        "Ts": 464. + 273.15,
-        "Tlab": 1330. + 273.15
-    },
 ]
 
 #######################
@@ -415,9 +373,8 @@ ax1.invert_yaxis()
 save_current_fig("_PTt", steepness_var)
 
 ax1.set_ylim([0,120])
-ax1.set_xlim([150,1300])
+ax1.set_xlim([400,1600])
 save_current_fig("_PTt_inverted", steepness_var)
-
 
 ############################################
 # Write LaTeX for 'tectonic setting' table #
@@ -778,8 +735,6 @@ def run_experiment(scenario):
 
     # Back-calculate depth, T, P, and rho
     depth_m_times = z0 + h0*times
-    #P_times = Ps + dPdt*times/t0 # bar
-    #T_times = [T0 for t in times]
     depth_m_times = get_depth_at_t(times, thickening_var)
     shortening_times = depth_m_times/z0
     T_times = [geotherm_steady(
@@ -1318,11 +1273,12 @@ mosaic = [
     ["21", "22", "23", "24"], # b
     ["31", "32", "33", "34"], # c
     ["41", "42", "43", "44"], # d
-    ["51", "52", "53", "54"], # e
-    ["61", "62", "63", "64"], # f
-    ["71", "72", "73", "74"], # g
-    ["81", "82", "83", "84"], # h
-    ["91", "92", "93", "94"]]# i
+    #["51", "52", "53", "54"], # e
+    #["61", "62", "63", "64"], # f
+    #["71", "72", "73", "74"], # g
+    #["81", "82", "83", "84"], # h
+    #["91", "92", "93", "94"]# i
+]
 axes = fig.subplot_mosaic(mosaic, sharex=True, sharey=True)
 
 [ax.set_prop_cycle(plt.cycler("color", greys(np.linspace(0.2, 1, num_lines)))) for label,ax in axes.items()]
