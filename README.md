@@ -17,8 +17,12 @@ Within the repository, build an image from the provided Dockerfile, giving it a 
 
 ```bash
 cd eclogite-tcg
-docker build -t eclogite -f ./docker/Dockerfile.dev
 ```
+
+```bash
+docker build -t eclogite -f ./docker/Dockerfile.dev .
+```
+(note the final period, which provides the path to the build context).
 
 Then run the **eclogite** image, making sure to bind the **eclogite-tcg** directory so that any changes will be reflected on your local machine:
 
