@@ -29,7 +29,10 @@ Then run the **eclogite** image. Here we mount two volumes (`-v`) in the contain
 2. Create a named volume, **database**, so that the reactions that were compiled during the Docker build will persist inside the container (otherwise the entire **eclogite-tcg** folder and its contents will be replaced in the container with the local contents)
 
 ```bash
-docker run -it --rm -v $PWD:/home/tcg/shared/eclogite-tcg -v database:/home/tcg/shared/eclogite-tcg/tcg_slb_database/database eclogite
+docker run -it --rm \
+  -v $PWD:/home/tcg/shared/eclogite-tcg \
+  -v database:/home/tcg/shared/eclogite-tcg/tcg_slb_database \
+  eclogite
 ```
 
 This will start an interactive shell in the container from which you can run the models.
