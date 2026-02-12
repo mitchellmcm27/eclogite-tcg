@@ -1,0 +1,1242 @@
+<?xml version='1.0' encoding='utf-8'?>
+<reaction_options>
+  <name name="abdullaziz_slb21_rx"/>
+  <database>
+    <string_value lines="1">file://../database/tcg_slb21_database.tar.gz</string_value>
+  </database>
+  <reference>
+    <string_value lines="1">generate_reactions_eclogite</string_value>
+  </reference>
+  <phase name="Clinopyroxene_slb21_ph"/>
+  <phase name="Orthopyroxene_slb21_ph"/>
+  <phase name="Quartz_slb21_ph"/>
+  <phase name="Feldspar_slb21_ph"/>
+  <phase name="Garnet_slb21_ph"/>
+  <phase name="Kyanite_slb21_ph"/>
+  <phase name="Spinel_slb21_ph"/>
+  <phase name="Olivine_slb21_ph"/>
+  <reaction_rate name="R">
+    <variable name="T">
+      <rank name="Scalar"/>
+      <units>K</units>
+    </variable>
+    <variable name="P">
+      <rank name="Scalar"/>
+      <units>bar</units>
+    </variable>
+    <variable name="C">
+      <rank name="Matrix">
+        <n_rows>N</n_rows>
+        <n_cols>Kmax</n_cols>
+      </rank>
+      <units>None</units>
+    </variable>
+    <variable name="Phi">
+      <rank name="Vector">
+        <size>N</size>
+      </rank>
+      <units>%</units>
+    </variable>
+    <function name="A">
+      <type name="external">
+        <rank name="Vector">
+          <size>J</size>
+        </rank>
+        <variable name="T">
+          <rank name="Scalar"/>
+          <units>K</units>
+        </variable>
+        <variable name="P">
+          <rank name="Scalar"/>
+          <units>bar</units>
+        </variable>
+        <variable name="C">
+          <rank name="Matrix">
+            <n_rows>N</n_rows>
+            <n_cols>Kmax</n_cols>
+          </rank>
+          <units>None</units>
+        </variable>
+      </type>
+    </function>
+    <function name="rho">
+      <type name="external">
+        <rank name="Vector">
+          <size>J</size>
+        </rank>
+        <variable name="T">
+          <rank name="Scalar"/>
+          <units>K</units>
+        </variable>
+        <variable name="P">
+          <rank name="Scalar"/>
+          <units>bar</units>
+        </variable>
+      </type>
+    </function>
+  </reaction_rate>
+  <global_parameters>
+    <parameter name="T0">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">2000</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'K'</string_value>
+        </units>
+      </rank>
+    </parameter>
+    <parameter name="R">
+      <rank name="Scalar">
+        <value>
+          <real_value rank="0">8.31446261815324</real_value>
+        </value>
+        <units>
+          <string_value lines="1">'J/mol/K'</string_value>
+        </units>
+      </rank>
+    </parameter>
+  </global_parameters>
+  <reaction name="HedeEnst_DiopFerr">
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HedeEnst_DiopFerr = (
+exp(-T0/T)*A[0, 0]*Phi[0, 0]*Phi[1, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="PyroFerr_AlmaEnst">
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">PyroFerr_AlmaEnst = (
+exp(-T0/T)*A[1, 0]*Phi[1, 0]*Phi[4, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="PyroHede_AlmaDiop">
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">PyroHede_AlmaDiop = (
+exp(-T0/T)*A[2, 0]*Phi[0, 0]*Phi[4, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstFaya_FerrFors">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstFaya_FerrFors = (
+exp(-T0/T)*A[3, 0]*Phi[1, 0]*Phi[7, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstHerc_FerrMgSp">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstHerc_FerrMgSp = (
+exp(-T0/T)*A[4, 0]*Phi[1, 0]*Phi[6, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="PyroHerc_AlmaMgSp">
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">PyroHerc_AlmaMgSp = (
+exp(-T0/T)*A[5, 0]*Phi[4, 0]*Phi[6, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="ForsHerc_FayaMgSp">
+    <reactant name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">ForsHerc_FayaMgSp = (
+exp(-T0/T)*A[6, 0]*Phi[6, 0]*Phi[7, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="ForsAlma_FayaPyro">
+    <reactant name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <reactant name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">ForsAlma_FayaPyro = (
+exp(-T0/T)*A[7, 0]*Phi[4, 0]*Phi[7, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="ForsHede_FayaDiop">
+    <reactant name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">ForsHede_FayaDiop = (
+exp(-T0/T)*A[8, 0]*Phi[0, 0]*Phi[7, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpHede_HercDiop">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpHede_HercDiop = (
+exp(-T0/T)*A[9, 0]*Phi[0, 0]*Phi[6, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Enst_Clin">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Clin_Clin" phase="Clinopyroxene_slb21_ph" endmember="Clinoenstatite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Enst_Clin = (
+Piecewise((exp(-T0/T)*A[10, 0]*Phi[1, 0]/(R*T), A[10, 0] &gt;= 0),
+(exp(-T0/T)*A[10, 0]*Phi[0, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Orth_Diop">
+    <reactant name="Orth_Orth" phase="Orthopyroxene_slb21_ph" endmember="OrthoDiopside_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Orth_Diop = (
+Piecewise((exp(-T0/T)*A[11, 0]*Phi[1, 0]/(R*T), A[11, 0] &gt;= 0),
+(exp(-T0/T)*A[11, 0]*Phi[0, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="CaTsPyro_GrosMgTs">
+    <reactant name="CaTs_Clin" phase="Clinopyroxene_slb21_ph" endmember="CaTschermaks_slb21_em"/>
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="MgTs_Orth" phase="Orthopyroxene_slb21_ph" endmember="MgTschermaks_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">CaTsPyro_GrosMgTs = (
+Piecewise((exp(-T0/T)*A[12, 0]*Phi[0, 0]*Phi[4, 0]/(R*T), A[12, 0] &gt;=
+0), (exp(-T0/T)*A[12, 0]*Phi[1, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Anor_CaTsQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="CaTs_Clin" phase="Clinopyroxene_slb21_ph" endmember="CaTschermaks_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Anor_CaTsQuar = (
+Piecewise((exp(-T0/T)*A[13, 0]*Phi[3, 0]/(R*T), A[13, 0] &gt;= 0),
+(exp(-T0/T)*A[13, 0]*Phi[0, 0]*Phi[2, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AnorEnst_DiopMgTsQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="MgTs_Orth" phase="Orthopyroxene_slb21_ph" endmember="MgTschermaks_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AnorEnst_DiopMgTsQuar = (
+Piecewise((exp(-T0/T)*A[14, 0]*Phi[1, 0]*Phi[3, 0]/(R*T), A[14, 0] &gt;=
+0), (exp(-T0/T)*A[14, 0]*Phi[0, 0]*Phi[1, 0]*Phi[2, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AnorEnst_PyroDiopQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AnorEnst_PyroDiopQuar = (
+Piecewise((exp(-T0/T)*A[15, 0]*Phi[1, 0]*Phi[3, 0]/(R*T), A[15, 0] &gt;=
+0), (exp(-T0/T)*A[15, 0]*Phi[0, 0]*Phi[2, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AnorEnst_PyroGrosQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AnorEnst_PyroGrosQuar = (
+Piecewise((exp(-T0/T)*A[16, 0]*Phi[1, 0]*Phi[3, 0]/(R*T), A[16, 0] &gt;=
+0), (exp(-T0/T)*A[16, 0]*Phi[2, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AnorFerr_AlmaHedeQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AnorFerr_AlmaHedeQuar = (
+Piecewise((exp(-T0/T)*A[17, 0]*Phi[1, 0]*Phi[3, 0]/(R*T), A[17, 0] &gt;=
+0), (exp(-T0/T)*A[17, 0]*Phi[0, 0]*Phi[2, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AnorFerr_AlmaGrosQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AnorFerr_AlmaGrosQuar = (
+Piecewise((exp(-T0/T)*A[18, 0]*Phi[1, 0]*Phi[3, 0]/(R*T), A[18, 0] &gt;=
+0), (exp(-T0/T)*A[18, 0]*Phi[2, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstMgTs_Pyro">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="MgTs_Orth" phase="Orthopyroxene_slb21_ph" endmember="MgTschermaks_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstMgTs_Pyro = (
+Piecewise((exp(-T0/T)*A[19, 0]*Phi[1, 0]**2/(R*T), A[19, 0] &gt;= 0),
+(exp(-T0/T)*A[19, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstCaTs_GrosPyro">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="CaTs_Clin" phase="Clinopyroxene_slb21_ph" endmember="CaTschermaks_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstCaTs_GrosPyro = (
+Piecewise((exp(-T0/T)*A[20, 0]*Phi[0, 0]*Phi[1, 0]/(R*T), A[20, 0] &gt;=
+0), (exp(-T0/T)*A[20, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Albi_JadeQuar">
+    <reactant name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <product name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Albi_JadeQuar = (
+Piecewise((exp(-T0/T)*A[21, 0]*Phi[3, 0]/(R*T), A[21, 0] &gt;= 0),
+(exp(-T0/T)*A[21, 0]*Phi[0, 0]*Phi[2, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="GrosPyroQuar_DiopKyan">
+    <reactant name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">GrosPyroQuar_DiopKyan = (
+Piecewise((exp(-T0/T)*A[22, 0]*Phi[2, 0]*Phi[4, 0]**2/(R*T), A[22, 0]
+&gt;= 0), (exp(-T0/T)*A[22, 0]*Phi[0, 0]*Phi[5, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="GrosAlmaQuar_HedeKyan">
+    <reactant name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <reactant name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">GrosAlmaQuar_HedeKyan = (
+Piecewise((exp(-T0/T)*A[23, 0]*Phi[2, 0]*Phi[4, 0]**2/(R*T), A[23, 0]
+&gt;= 0), (exp(-T0/T)*A[23, 0]*Phi[0, 0]*Phi[5, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="PyroQuar_ClinKyan">
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Clin_Clin" phase="Clinopyroxene_slb21_ph" endmember="Clinoenstatite_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">PyroQuar_ClinKyan = (
+Piecewise((exp(-T0/T)*A[24, 0]*Phi[2, 0]*Phi[4, 0]/(R*T), A[24, 0] &gt;=
+0), (exp(-T0/T)*A[24, 0]*Phi[0, 0]*Phi[5, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="GrosKyan_CaTsQuar">
+    <reactant name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <reactant name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <product name="CaTs_Clin" phase="Clinopyroxene_slb21_ph" endmember="CaTschermaks_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">GrosKyan_CaTsQuar = (
+Piecewise((exp(-T0/T)*A[25, 0]*Phi[4, 0]*Phi[5, 0]/(R*T), A[25, 0] &gt;=
+0), (exp(-T0/T)*A[25, 0]*Phi[0, 0]*Phi[2, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Anor_KyanGrosQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Anor_KyanGrosQuar = (
+Piecewise((exp(-T0/T)*A[26, 0]*Phi[3, 0]/(R*T), A[26, 0] &gt;= 0),
+(exp(-T0/T)*A[26, 0]*Phi[2, 0]*Phi[4, 0]*Phi[5, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FerrMgTs_PyroAlma">
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="MgTs_Orth" phase="Orthopyroxene_slb21_ph" endmember="MgTschermaks_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FerrMgTs_PyroAlma = (
+Piecewise((exp(-T0/T)*A[27, 0]*Phi[1, 0]**2/(R*T), A[27, 0] &gt;= 0),
+(exp(-T0/T)*A[27, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FerrCaTs_GrosPyroAlma">
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="CaTs_Clin" phase="Clinopyroxene_slb21_ph" endmember="CaTschermaks_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FerrCaTs_GrosPyroAlma = (
+Piecewise((exp(-T0/T)*A[28, 0]*Phi[0, 0]*Phi[1, 0]/(R*T), A[28, 0] &gt;=
+0), (exp(-T0/T)*A[28, 0]*Phi[4, 0]**3/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AnorPyro_MgTsGrosQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="MgTs_Orth" phase="Orthopyroxene_slb21_ph" endmember="MgTschermaks_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AnorPyro_MgTsGrosQuar = (
+Piecewise((exp(-T0/T)*A[29, 0]*Phi[3, 0]*Phi[4, 0]/(R*T), A[29, 0] &gt;=
+0), (exp(-T0/T)*A[29, 0]*Phi[1, 0]*Phi[2, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="DiopAnor_GrosPyroQuar">
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">DiopAnor_GrosPyroQuar = (
+Piecewise((exp(-T0/T)*A[30, 0]*Phi[0, 0]*Phi[3, 0]/(R*T), A[30, 0] &gt;=
+0), (exp(-T0/T)*A[30, 0]*Phi[2, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HedeAnor_GrosAlmaQuar">
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HedeAnor_GrosAlmaQuar = (
+Piecewise((exp(-T0/T)*A[31, 0]*Phi[0, 0]*Phi[3, 0]/(R*T), A[31, 0] &gt;=
+0), (exp(-T0/T)*A[31, 0]*Phi[2, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AnorClin_GrosPyroQuar">
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <reactant name="Clin_Clin" phase="Clinopyroxene_slb21_ph" endmember="Clinoenstatite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AnorClin_GrosPyroQuar = (
+Piecewise((exp(-T0/T)*A[32, 0]*Phi[0, 0]*Phi[3, 0]/(R*T), A[32, 0] &gt;=
+0), (exp(-T0/T)*A[32, 0]*Phi[2, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpQuar_EnstKyan">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpQuar_EnstKyan = (
+Piecewise((exp(-T0/T)*A[33, 0]*Phi[2, 0]*Phi[6, 0]/(R*T), A[33, 0] &gt;=
+0), (exp(-T0/T)*A[33, 0]*Phi[1, 0]*Phi[5, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercQuar_FerrKyan">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercQuar_FerrKyan = (
+Piecewise((exp(-T0/T)*A[34, 0]*Phi[2, 0]*Phi[6, 0]/(R*T), A[34, 0] &gt;=
+0), (exp(-T0/T)*A[34, 0]*Phi[1, 0]*Phi[5, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="DiopKyan_AnorQuarFors">
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">DiopKyan_AnorQuarFors = (
+Piecewise((exp(-T0/T)*A[35, 0]*Phi[0, 0]*Phi[5, 0]/(R*T), A[35, 0] &gt;=
+0), (exp(-T0/T)*A[35, 0]*Phi[2, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HedeKyan_AnorQuarFaya">
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HedeKyan_AnorQuarFaya = (
+Piecewise((exp(-T0/T)*A[36, 0]*Phi[0, 0]*Phi[5, 0]/(R*T), A[36, 0] &gt;=
+0), (exp(-T0/T)*A[36, 0]*Phi[2, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="ForsQuar_Enst">
+    <reactant name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">ForsQuar_Enst = (
+Piecewise((exp(-T0/T)*A[37, 0]*Phi[2, 0]*Phi[7, 0]/(R*T), A[37, 0] &gt;=
+0), (exp(-T0/T)*A[37, 0]*Phi[1, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FayaQuar_Ferr">
+    <reactant name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FayaQuar_Ferr = (
+Piecewise((exp(-T0/T)*A[38, 0]*Phi[2, 0]*Phi[7, 0]/(R*T), A[38, 0] &gt;=
+0), (exp(-T0/T)*A[38, 0]*Phi[1, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="QuarKyanFors_Pyro">
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <reactant name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <reactant name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">QuarKyanFors_Pyro = (
+Piecewise((exp(-T0/T)*A[39, 0]*Phi[2, 0]*Phi[5, 0]*Phi[7, 0]/(R*T),
+A[39, 0] &gt;= 0), (exp(-T0/T)*A[39, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="QuarKyanFaya_Alma">
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <reactant name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <reactant name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">QuarKyanFaya_Alma = (
+Piecewise((exp(-T0/T)*A[40, 0]*Phi[2, 0]*Phi[5, 0]*Phi[7, 0]/(R*T),
+A[40, 0] &gt;= 0), (exp(-T0/T)*A[40, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Alma_FayaFerrKyan">
+    <reactant name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Alma_FayaFerrKyan = (
+Piecewise((exp(-T0/T)*A[41, 0]*Phi[4, 0]/(R*T), A[41, 0] &gt;= 0),
+(exp(-T0/T)*A[41, 0]*Phi[1, 0]*Phi[5, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Pyro_ForsEnstKyan">
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Pyro_ForsEnstKyan = (
+Piecewise((exp(-T0/T)*A[42, 0]*Phi[4, 0]/(R*T), A[42, 0] &gt;= 0),
+(exp(-T0/T)*A[42, 0]*Phi[1, 0]*Phi[5, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="GrosAlma_FayaAnor">
+    <reactant name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <reactant name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">GrosAlma_FayaAnor = (
+Piecewise((exp(-T0/T)*A[43, 0]*Phi[4, 0]**2/(R*T), A[43, 0] &gt;= 0),
+(exp(-T0/T)*A[43, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="GrosPyro_ForsAnor">
+    <reactant name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">GrosPyro_ForsAnor = (
+Piecewise((exp(-T0/T)*A[44, 0]*Phi[4, 0]**2/(R*T), A[44, 0] &gt;= 0),
+(exp(-T0/T)*A[44, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Pyro_MgSpEnstQuar">
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Pyro_MgSpEnstQuar = (
+Piecewise((exp(-T0/T)*A[45, 0]*Phi[4, 0]/(R*T), A[45, 0] &gt;= 0),
+(exp(-T0/T)*A[45, 0]*Phi[1, 0]*Phi[2, 0]*Phi[6, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="Alma_HercFerrQuar">
+    <reactant name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">Alma_HercFerrQuar = (
+Piecewise((exp(-T0/T)*A[46, 0]*Phi[4, 0]/(R*T), A[46, 0] &gt;= 0),
+(exp(-T0/T)*A[46, 0]*Phi[1, 0]*Phi[2, 0]*Phi[6, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="DiopKyan_MgSpAnorQuar">
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <product name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">DiopKyan_MgSpAnorQuar = (
+Piecewise((exp(-T0/T)*A[47, 0]*Phi[0, 0]*Phi[5, 0]/(R*T), A[47, 0] &gt;=
+0), (exp(-T0/T)*A[47, 0]*Phi[2, 0]*Phi[3, 0]*Phi[6, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HedeKyan_HercAnorQuar">
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Kyan_Kyan" phase="Kyanite_slb21_ph" endmember="Kyanite_slb21_em"/>
+    <product name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HedeKyan_HercAnorQuar = (
+Piecewise((exp(-T0/T)*A[48, 0]*Phi[0, 0]*Phi[5, 0]/(R*T), A[48, 0] &gt;=
+0), (exp(-T0/T)*A[48, 0]*Phi[2, 0]*Phi[3, 0]*Phi[6, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpEnst_PyroFors">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpEnst_PyroFors = (
+Piecewise((exp(-T0/T)*A[49, 0]*Phi[1, 0]*Phi[6, 0]/(R*T), A[49, 0] &gt;=
+0), (exp(-T0/T)*A[49, 0]*Phi[4, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercFerr_AlmaFaya">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercFerr_AlmaFaya = (
+Piecewise((exp(-T0/T)*A[50, 0]*Phi[1, 0]*Phi[6, 0]/(R*T), A[50, 0] &gt;=
+0), (exp(-T0/T)*A[50, 0]*Phi[4, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpEnstAnor_GrosPyro">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpEnstAnor_GrosPyro = (
+Piecewise((exp(-T0/T)*A[51, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[51, 0] &gt;= 0), (exp(-T0/T)*A[51, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercFerrAnor_GrosAlma">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercFerrAnor_GrosAlma = (
+Piecewise((exp(-T0/T)*A[52, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[52, 0] &gt;= 0), (exp(-T0/T)*A[52, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpFerrAnor_GrosAlmaPyro">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpFerrAnor_GrosAlmaPyro = (
+Piecewise((exp(-T0/T)*A[53, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[53, 0] &gt;= 0), (exp(-T0/T)*A[53, 0]*Phi[4, 0]**3/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercEnstAnor_GrosAlmaPyro">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercEnstAnor_GrosAlmaPyro = (
+Piecewise((exp(-T0/T)*A[54, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[54, 0] &gt;= 0), (exp(-T0/T)*A[54, 0]*Phi[4, 0]**3/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpDiop_ForsPyroGros">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpDiop_ForsPyroGros = (
+Piecewise((exp(-T0/T)*A[55, 0]*Phi[0, 0]*Phi[6, 0]/(R*T), A[55, 0] &gt;=
+0), (exp(-T0/T)*A[55, 0]*Phi[4, 0]**2*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercHede_FayaAlmaGros">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercHede_FayaAlmaGros = (
+Piecewise((exp(-T0/T)*A[56, 0]*Phi[0, 0]*Phi[6, 0]/(R*T), A[56, 0] &gt;=
+0), (exp(-T0/T)*A[56, 0]*Phi[4, 0]**2*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpDiopAnor_GrosPyro">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpDiopAnor_GrosPyro = (
+Piecewise((exp(-T0/T)*A[57, 0]*Phi[0, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[57, 0] &gt;= 0), (exp(-T0/T)*A[57, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercHedeAnor_GrosAlma">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercHedeAnor_GrosAlma = (
+Piecewise((exp(-T0/T)*A[58, 0]*Phi[0, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[58, 0] &gt;= 0), (exp(-T0/T)*A[58, 0]*Phi[4, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpDiopAnor_GrosEnst">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpDiopAnor_GrosEnst = (
+Piecewise((exp(-T0/T)*A[59, 0]*Phi[0, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[59, 0] &gt;= 0), (exp(-T0/T)*A[59, 0]*Phi[1, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercHedeAnor_GrosFerr">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Gros_Garn" phase="Garnet_slb21_ph" endmember="Grossular_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercHedeAnor_GrosFerr = (
+Piecewise((exp(-T0/T)*A[60, 0]*Phi[0, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[60, 0] &gt;= 0), (exp(-T0/T)*A[60, 0]*Phi[1, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpEnstAnor_DiopPyro">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpEnstAnor_DiopPyro = (
+Piecewise((exp(-T0/T)*A[61, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[61, 0] &gt;= 0), (exp(-T0/T)*A[61, 0]*Phi[0, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercFerrAnor_HedeAlma">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercFerrAnor_HedeAlma = (
+Piecewise((exp(-T0/T)*A[62, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[62, 0] &gt;= 0), (exp(-T0/T)*A[62, 0]*Phi[0, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpFerrAnor_DiopAlma">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpFerrAnor_DiopAlma = (
+Piecewise((exp(-T0/T)*A[63, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[63, 0] &gt;= 0), (exp(-T0/T)*A[63, 0]*Phi[0, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercEnstAnor_HedePyro">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercEnstAnor_HedePyro = (
+Piecewise((exp(-T0/T)*A[64, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[64, 0] &gt;= 0), (exp(-T0/T)*A[64, 0]*Phi[0, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpEnstAlbi_JadePyro">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <product name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpEnstAlbi_JadePyro = (
+Piecewise((exp(-T0/T)*A[65, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[65, 0] &gt;= 0), (exp(-T0/T)*A[65, 0]*Phi[0, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercFerrAlbi_JadeAlma">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <product name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercFerrAlbi_JadeAlma = (
+Piecewise((exp(-T0/T)*A[66, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[66, 0] &gt;= 0), (exp(-T0/T)*A[66, 0]*Phi[0, 0]*Phi[4, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HercEnstAlbi_JadeAlmaPyro">
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <product name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HercEnstAlbi_JadeAlmaPyro = (
+Piecewise((exp(-T0/T)*A[67, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[67, 0] &gt;= 0), (exp(-T0/T)*A[67, 0]*Phi[0, 0]*Phi[4, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgSpFerrAlbi_JadeAlmaPyro">
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <product name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <product name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgSpFerrAlbi_JadeAlmaPyro = (
+Piecewise((exp(-T0/T)*A[68, 0]*Phi[1, 0]*Phi[3, 0]*Phi[6, 0]/(R*T),
+A[68, 0] &gt;= 0), (exp(-T0/T)*A[68, 0]*Phi[0, 0]*Phi[4, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstDiopMgSp_AnorFors">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstDiopMgSp_AnorFors = (
+Piecewise((exp(-T0/T)*A[69, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[69, 0] &gt;= 0), (exp(-T0/T)*A[69, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstDiopHerc_AnorForsFaya">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstDiopHerc_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[70, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[70, 0] &gt;= 0), (exp(-T0/T)*A[70, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstHedeMgSp_AnorForsFaya">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstHedeMgSp_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[71, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[71, 0] &gt;= 0), (exp(-T0/T)*A[71, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstHedeHerc_AnorForsFaya">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstHedeHerc_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[72, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[72, 0] &gt;= 0), (exp(-T0/T)*A[72, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstJade_AlbiFors">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstJade_AlbiFors = (
+Piecewise((exp(-T0/T)*A[73, 0]*Phi[0, 0]*Phi[1, 0]/(R*T), A[73, 0] &gt;=
+0), (exp(-T0/T)*A[73, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FerrJade_AlbiFaya">
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FerrJade_AlbiFaya = (
+Piecewise((exp(-T0/T)*A[74, 0]*Phi[0, 0]*Phi[1, 0]/(R*T), A[74, 0] &gt;=
+0), (exp(-T0/T)*A[74, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FerrHedeHerc_AnorFaya">
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FerrHedeHerc_AnorFaya = (
+Piecewise((exp(-T0/T)*A[75, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[75, 0] &gt;= 0), (exp(-T0/T)*A[75, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FerrHedeMgSp_AnorFayaFors">
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FerrHedeMgSp_AnorFayaFors = (
+Piecewise((exp(-T0/T)*A[76, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[76, 0] &gt;= 0), (exp(-T0/T)*A[76, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FerrDiopMgSp_AnorFayaFors">
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FerrDiopMgSp_AnorFayaFors = (
+Piecewise((exp(-T0/T)*A[77, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[77, 0] &gt;= 0), (exp(-T0/T)*A[77, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="FerrDiopHerc_AnorFayaFors">
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">FerrDiopHerc_AnorFayaFors = (
+Piecewise((exp(-T0/T)*A[78, 0]*Phi[0, 0]*Phi[1, 0]*Phi[6, 0]/(R*T),
+A[78, 0] &gt;= 0), (exp(-T0/T)*A[78, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstFerrMgSp_AnorForsFaya">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstFerrMgSp_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[79, 0]*Phi[1, 0]**2*Phi[6, 0]/(R*T), A[79, 0]
+&gt;= 0), (exp(-T0/T)*A[79, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="EnstFerrHerc_AnorForsFaya">
+    <reactant name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <reactant name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">EnstFerrHerc_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[80, 0]*Phi[1, 0]**2*Phi[6, 0]/(R*T), A[80, 0]
+&gt;= 0), (exp(-T0/T)*A[80, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="DiopHedeMgSp_AnorForsFaya">
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">DiopHedeMgSp_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[81, 0]*Phi[0, 0]**2*Phi[6, 0]/(R*T), A[81, 0]
+&gt;= 0), (exp(-T0/T)*A[81, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="DiopHedeHerc_AnorForsFaya">
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">DiopHedeHerc_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[82, 0]*Phi[0, 0]**2*Phi[6, 0]/(R*T), A[82, 0]
+&gt;= 0), (exp(-T0/T)*A[82, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="DiopMgSpQuar_AnorFors">
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">DiopMgSpQuar_AnorFors = (
+Piecewise((exp(-T0/T)*A[83, 0]*Phi[0, 0]*Phi[2, 0]*Phi[6, 0]/(R*T),
+A[83, 0] &gt;= 0), (exp(-T0/T)*A[83, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HedeHercQuar_AnorFaya">
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HedeHercQuar_AnorFaya = (
+Piecewise((exp(-T0/T)*A[84, 0]*Phi[0, 0]*Phi[2, 0]*Phi[6, 0]/(R*T),
+A[84, 0] &gt;= 0), (exp(-T0/T)*A[84, 0]*Phi[3, 0]*Phi[7, 0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="DiopHercQuar_AnorForsFaya">
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <reactant name="Herc_Spin" phase="Spinel_slb21_ph" endmember="Hercynite_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">DiopHercQuar_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[85, 0]*Phi[0, 0]*Phi[2, 0]*Phi[6, 0]/(R*T),
+A[85, 0] &gt;= 0), (exp(-T0/T)*A[85, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="HedeMgSpQuar_AnorForsFaya">
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <reactant name="MgSp_Spin" phase="Spinel_slb21_ph" endmember="MgSpinel_slb21_em"/>
+    <reactant name="Quar_Quar" phase="Quartz_slb21_ph" endmember="Quartz_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <product name="Fors_Oliv" phase="Olivine_slb21_ph" endmember="Forsterite_slb21_em"/>
+    <product name="Faya_Oliv" phase="Olivine_slb21_ph" endmember="Fayalite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">HedeMgSpQuar_AnorForsFaya = (
+Piecewise((exp(-T0/T)*A[86, 0]*Phi[0, 0]*Phi[2, 0]*Phi[6, 0]/(R*T),
+A[86, 0] &gt;= 0), (exp(-T0/T)*A[86, 0]*Phi[3, 0]*Phi[7, 0]**2/(R*T),
+True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="MgTsDiop_CaTsEnst">
+    <reactant name="MgTs_Orth" phase="Orthopyroxene_slb21_ph" endmember="MgTschermaks_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="CaTs_Clin" phase="Clinopyroxene_slb21_ph" endmember="CaTschermaks_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">MgTsDiop_CaTsEnst = (
+exp(-T0/T)*A[87, 0]*Phi[0, 0]*Phi[1, 0]/(R*T)
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="PyroAlbiDiop_EnstJadeAnor">
+    <reactant name="Pyro_Garn" phase="Garnet_slb21_ph" endmember="Pyrope_slb21_em"/>
+    <reactant name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <reactant name="Diop_Clin" phase="Clinopyroxene_slb21_ph" endmember="Diopside_slb21_em"/>
+    <product name="Enst_Orth" phase="Orthopyroxene_slb21_ph" endmember="Enstatite_slb21_em"/>
+    <product name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">PyroAlbiDiop_EnstJadeAnor = (
+Piecewise((exp(-T0/T)*A[88, 0]*Phi[0, 0]*Phi[3, 0]*Phi[4, 0]/(R*T),
+A[88, 0] &gt;= 0), (exp(-T0/T)*A[88, 0]*Phi[0, 0]*Phi[1, 0]*Phi[3,
+0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+  <reaction name="AlmaAlbiHede_FerrJadeAnor">
+    <reactant name="Alma_Garn" phase="Garnet_slb21_ph" endmember="Almandine_slb21_em"/>
+    <reactant name="Albi_Feld" phase="Feldspar_slb21_ph" endmember="Albite_slb21_em"/>
+    <reactant name="Hede_Clin" phase="Clinopyroxene_slb21_ph" endmember="Hedenbergite_slb21_em"/>
+    <product name="Ferr_Orth" phase="Orthopyroxene_slb21_ph" endmember="Ferrosilite_slb21_em"/>
+    <product name="Jade_Clin" phase="Clinopyroxene_slb21_ph" endmember="Jadeite_slb21_em"/>
+    <product name="Anor_Feld" phase="Feldspar_slb21_ph" endmember="Anorthite_slb21_em"/>
+    <expression>
+      <string_value type="code" language="python" lines="20">AlmaAlbiHede_FerrJadeAnor = (
+Piecewise((exp(-T0/T)*A[89, 0]*Phi[0, 0]*Phi[3, 0]*Phi[4, 0]/(R*T),
+A[89, 0] &gt;= 0), (exp(-T0/T)*A[89, 0]*Phi[0, 0]*Phi[1, 0]*Phi[3,
+0]/(R*T), True))
+)</string_value>
+    </expression>
+  </reaction>
+</reaction_options>
