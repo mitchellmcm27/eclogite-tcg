@@ -50,7 +50,7 @@ save_output = False
 load_output = True
 
 reference = "venus_model"
-rxn_name = "mafic_slb21_rx"
+rxn_name = "claude_slb21_rx"
 
 # only phases greater than this fraction will be plotted
 phasetol = 1.e-5 # default 1.e-2
