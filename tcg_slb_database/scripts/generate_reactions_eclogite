@@ -33,6 +33,10 @@ def generate_reactions(outdir,version):
     gs = ['Garnet', 'Grossular']
     qz = ['Quartz', 'Quartz']
     ky = ['Kyanite', 'Kyanite']
+    mgsp = ['Spinel', 'MgSpinel']
+    herc = ['Spinel', 'Hercynite']
+    fo = ['Olivine', 'Forsterite']
+    fa = ['Olivine', 'Fayalite']
 
     phases=[
         'Clinopyroxene',
@@ -43,7 +47,18 @@ def generate_reactions(outdir,version):
         'Kyanite',
     ]
 
-    reactions=[
+    phases_mafic=[
+        'Clinopyroxene',
+        'Orthopyroxene',
+        'Quartz',
+        'Feldspar',
+        'Garnet',
+        'Kyanite',
+        'Spinel',
+        'Olivine'
+    ]
+
+    reactions_2024 = [
         ([hed, oEn],[di, fs]), # Fe-Mg exchange, Cpx-Opx
         ([pyp, fs],[alm, oEn]), # Fe-Mg exchange, Grt-Opx
         ([pyp, hed], [alm, di]), # Ellis & Green 1979 (1), #Fe-Mg exchange, Grt-Cpx
@@ -72,9 +87,562 @@ def generate_reactions(outdir,version):
         #([cats, an], [gs, qz]), # removed because this reduces to an = cats + qtz
         ([an, cEn], [gs, pyp, qz])
     ]
+
+    reactions_abdullaziz = [
+        ([hed, oEn],[di, fs]), # Fe-Mg exchange, Cpx-Opx
+        ([pyp, fs],[alm, oEn]), # Fe-Mg exchange, Grt-Opx
+        ([pyp, hed], [alm, di]), # Ellis & Green 1979 (1), #Fe-Mg exchange, Grt-Cpx
+        
+        #The rest of the Cations: -Abdulaziz
+        ([oEn, fa], [fs, fo]),
+        ([oEn, herc], [fs, mgsp]),
+        ([pyp, herc], [alm, mgsp]),
+        ([fo, herc], [fa, mgsp]),
+        ([fo, alm], [fa, pyp]),
+        ([fo, hed], [fa, di]),
+        ([mgsp, hed], [herc, di]),
+        
+        ([oEn],[cEn]),
+        ([oDi],[di]),
+        ([cats, pyp], [gs, mgts]), # cation exchange with Tschermaks
+        ([an], [cats, qz]), # Paria et al (paragraph 2, cites Herzberg 1978), GR67b
+        ([an, oEn], [di, mgts, qz]), # Green & Ringwood 1967 (a) - GR67a
+        ([an, oEn], [pyp, di, qz]),  # GR67c, Paria et al (B)
+        ([an, oEn], [pyp, gs, qz]), # GR67d
+        ([an, fs], [alm, hed, qz]), # Paria et al (A), GR67c
+        ([an, fs], [alm, gs, qz]),  # GR67d
+        ([oEn, mgts], [pyp]), # Paria et al (paragraph 2, cites RWood 1974), GR67e, Wood & Banno 1973 (1)
+        ([oEn, cats], [gs, pyp]), # GR67f
+        ([ab], [jd, qz]), # Paria et al (paragraph 2, Reinsch 1977 cited in Newton 1983), GR67g
+        ([gs, pyp, qz], [di, ky]),
+        ([gs, alm, qz], [hed, ky]),
+        ([pyp, qz], [cEn, ky]),
+        ([gs, ky], [cats, qz]),
+        ([an], [ky, gs, qz]),  # Koziol et al 1988 (paragraph 1), GR67o
+        ([fs, mgts], [pyp, alm]), 
+        ([fs, cats], [gs, pyp, alm]),  
+        ([an, pyp], [mgts, gs, qz]), # swapped pyp and mgts because it gets swapped by TCG
+        ([di, an], [gs, pyp, qz]), 
+        ([hed, an], [gs, alm, qz]),
+        #([cats, an], [gs, qz]), # removed because this reduces to an = cats + qtz
+        ([an, cEn], [gs, pyp, qz]),
+
+        # added based on whiteboard discussion
+        ([mgsp, qz], [oEn, ky]), #
+        ([herc, qz], [fs, ky]), #
+        #20/9/2024 Added at lab
+        ([di,ky], [an, qz, fo]),
+        ([hed,ky], [an, qz, fa]),
+
+        # FROM THIS POINT THERE WERE NO CHANGES TO THE GRAPH
+        #Added on 24/9/2024 Might need to check their balancing. Phases graph doesn't look any different after running
+        ([fo, qz], [oEn]),
+        ([fa, qz], [fs]),
+
+        ([qz,ky,fo], [pyp]),
+        ([qz,ky,fa], [alm]),
+
+        #Added on 25/9/2024 during meeting
+
+        # NOTE 1: A valid solution is if there is 0 quartz, anorthite, or cats
+        # this is not good, so the reaction must be simplified
+        # cats + alm + qz = fa + fs + an + ky
+
+        # this is the Ca-bearing part of the reaction
+        # ([cats,qz],[an]), # but we already have this above
+
+        # This is the Fe-bearing part, which works
+        ([alm], [fa, fs, ky]),
+        
+        # Do the same thing for this reaction... cats + pyp + qz = fo + oEn, an, ky]),
+
+        # leaving the Mg-bearing part
+        ([pyp], [fo, oEn, ky]),
+
+        # NOTE 2: A solution to this rxn is when ky = fs = qz = 0 (not good)
+        #([gs, alm, ky, qz], [fa, fs, an]),
+
+        # but it simplifies to...
+        ([gs, alm], [fa, an]),
+
+        # Similarly for Mg
+        #([gs, pyp, ky, qz], [fo, oEn, an])
+        ([gs, pyp], [fo, an]),
+
+        # added 10-2-2024
+        # gt + cpx -> spinel + opx ?
+        ([pyp], [mgsp, oEn, qz]),
+        ([alm], [herc, fs, qz]),
+        #([namj, jd, ky], [mgsp, ab]),
+        
+        # added 8 - 20 - 2024
+        #([mgmj], [cEn]),
+        #([mgmj], [oEn])
+
+        ##### Mitchell 10-16-2024
+        ([di, ky], [mgsp, an, qz]),
+        ([hed, ky], [herc, an, qz]),
+
+        # MacGregor 1970, breaks down into 2 separate reactions each for Mg and Fe
+        # mgsp/herc + oEn/fs + di/hed = fo/fa + gs + pyp/alm
+        ## equation (1)
+        ([mgsp, oEn], [pyp, fo]),
+        ([herc, fs], [alm, fa]),
+        ## equation (1) but with anorthite and no olivine
+        ([mgsp, oEn, an], [gs, pyp]),
+        ([herc, fs, an], [gs, alm]),
+        ([mgsp, fs, an], [gs, alm, pyp]),
+        ([herc, oEn, an], [gs, alm, pyp]),
+
+        ## equation (2)
+        ([mgsp, di], [fo, pyp, gs]),
+        ([herc, hed] ,[fa, alm, gs]),
+        ## equation (2) but with anorthite and no olivine
+        ([mgsp, di, an], [gs, pyp]),#?
+        ([herc, hed, an], [gs, alm]),#?
+        ([mgsp, di, an], [gs, oEn]),
+        ([herc, hed, an], [gs, fs]),
+        
+        # sp + opx + fsp = cpx + gt
+        # involving anorthite
+        ([mgsp, oEn, an], [di, pyp]),
+        ([herc, fs, an], [hed, alm]),
+        ([mgsp, fs, an], [di, alm]),
+        ([herc, oEn, an], [hed, pyp]),
+
+        # involving albite
+        ([mgsp, oEn, ab], [jd, pyp]),
+        ([herc, fs, ab], [jd, alm]),
+        ([herc, oEn, ab], [jd, alm, pyp]),
+        ([mgsp, fs, ab], [jd, alm, pyp]),
+
+        # cpx + opx (+sp) (+qz) = plg + ol
+        # opx, cpx, sp
+        ([oEn, di, mgsp], [an, fo]),
+        ([oEn, di, herc], [an, fo, fa]),
+        ([oEn, hed, mgsp], [an, fo, fa]),
+        ([oEn, hed, herc], [an, fo, fa]),
+
+        #opx, cpx, sp
+        ([oEn, jd], [ab, fo]),
+        ([fs, jd], [ab, fa]),
+        #([jd, oEn, fs], [ab, fa, fo]),
+
+        # opx, cpx, sp
+        ([fs, hed, herc], [an, fa]),
+        ([fs, hed, mgsp], [an, fa, fo]),
+        ([fs, di, mgsp], [an, fa, fo]),
+        ([fs, di, herc], [an, fa, fo]),
+
+        # opx, opx, sp
+        ([oEn, fs, mgsp], [an, fo, fa]),
+        ([oEn, fs, herc], [an, fo, fa]),
+        ([di, hed, mgsp], [an, fo, fa]),
+        ([di, hed, herc], [an, fo, fa]),
+
+        # cpx, sp, qz
+        ([di, mgsp, qz], [an, fo]),
+        ([hed, herc, qz], [an, fa]),
+        ([di, herc, qz], [an, fo, fa]),
+        ([hed, mgsp, qz], [an, fo, fa]),
+        #^^^^^^ Mitchell 10-16-2024 
+
+        # vvvvvvvv Whiteboard etc. 10-30-2024
+        # Trying 
+        # ([mgts],[mgsp, qz]), # tried, did not help
+        # ([oEn, mgsp], [mgts, fo]), # tried, did not help
+        # ([fs, mgsp], [mgts, fa]), # didn't try
+        ([mgts, di],[cats, oEn]), # This helps!
+        # ([mgts, gs],[pyp, an]) # tried, did not help
+        # ([mgts, hed], [cats, fs, pyp]) # tried, did not help
+        ([pyp, ab, di], [oEn, jd, an]), # This helps
+        ([alm, ab, hed], [fs, jd, an]), # This helps
+        # ^^^^^^^^ Whiteboard etc. 10-30-2024
+    ]
+
+    reactions_claude = [
+        ([cEn], [en]),
+        ([di], [odi]),
+        ([an], [qz, cats]),
+        ([ab], [qz, jd]),
+        ([en], [qz, fo]),
+        ([fs], [qz, fa]),
+        ([mgts], [qz, sp]),
+        ([cEn], [qz, fo]),
+        ([py], [en, mgts]),
+        ([py], [mgts, cEn]),
+        ([ky, en], [qz, py]),
+        ([ky, en], [qz, sp]),
+        ([ky, fs], [qz, alm]),
+        ([ky, fs], [qz, her]),
+        ([ky, cEn], [qz, py]),
+        ([ky, cEn], [qz, sp]),
+        ([py], [qz, en, sp]),
+        ([alm], [qz, fs, her]),
+        ([py], [qz, mgts, fo]),
+        ([py], [qz, cEn, sp]),
+        ([mgts], [ky, en, sp]),
+        ([py], [ky, en, sp]),
+        ([alm], [ky, fs, her]),
+        ([mgts], [ky, cEn, sp]),
+        ([mgts], [ky, py, sp]),
+        ([py], [ky, cEn, sp]),
+        ([py, sp], [ky, fo]),
+        ([alm, her], [ky, fa]),
+        ([ab, cats], [an, jd]),
+        ([en, cats], [an, fo]),
+        ([fs, cats], [an, fa]),
+        ([odi, mgts], [an, fo]),
+        ([mgts, di], [an, fo]),
+        ([mgts, cats], [an, sp]),
+        ([cEn, cats], [an, fo]),
+        ([py, gr], [an, fo]),
+        ([gr, alm], [an, fa]),
+        ([en, jd], [ab, fo]),
+        ([fs, jd], [ab, fa]),
+        ([mgts, jd], [ab, sp]),
+        ([cEn, jd], [ab, fo]),
+        ([fs, py], [en, alm]),
+        ([fs, fo], [en, fa]),
+        ([odi, mgts], [en, cats]),
+        ([mgts, di], [en, cats]),
+        ([mgts, fo], [en, sp]),
+        ([py, gr], [en, cats]),
+        ([py, alm], [fs, mgts]),
+        ([mgts, fa], [fs, sp]),
+        ([cEn, alm], [fs, py]),
+        ([cEn, fa], [fs, fo]),
+        ([gr, alm], [fs, cats]),
+        ([cEn, cats], [odi, mgts]),
+        ([py, gr], [odi, mgts]),
+        ([hed, sp], [odi, her]),
+        ([py, gr], [odi, cats]),
+        ([cats, fo], [odi, sp]),
+        ([cEn, cats], [mgts, di]),
+        ([py, gr], [mgts, di]),
+        ([cEn, sp], [mgts, fo]),
+        ([hed, sp], [di, her]),
+        ([py, gr], [di, cats]),
+        ([cats, fo], [di, sp]),
+        ([gr, alm], [hed, cats]),
+        ([cats, fa], [hed, her]),
+        ([py, gr], [cEn, cats]),
+        ([alm, fo], [py, fa]),
+        ([ky, odi], [qz, an, mgts]),
+        ([ky, odi], [qz, an, py]),
+        ([ky, di], [qz, an, mgts]),
+        ([ky, di], [qz, an, py]),
+        ([ky, hed], [qz, an, alm]),
+        ([ky, odi], [qz, en, cats]),
+        ([ky, di], [qz, en, cats]),
+        ([ky, hed], [qz, fs, cats]),
+        ([ky, odi], [qz, mgts, gr]),
+        ([ky, odi], [qz, cEn, cats]),
+        ([ky, odi], [qz, cats, py]),
+        ([ky, odi], [qz, cats, sp]),
+        ([ky, odi], [qz, gr, sp]),
+        ([ky, odi], [qz, gr, fo]),
+        ([ky, di], [qz, mgts, gr]),
+        ([ky, di], [qz, cEn, cats]),
+        ([ky, di], [qz, cats, py]),
+        ([ky, di], [qz, cats, sp]),
+        ([ky, di], [qz, gr, sp]),
+        ([ky, di], [qz, gr, fo]),
+        ([ky, hed], [qz, cats, alm]),
+        ([ky, hed], [qz, cats, her]),
+        ([ky, hed], [qz, gr, her]),
+        ([ky, hed], [qz, gr, fa]),
+        ([an, en], [qz, odi, mgts]),
+        ([an, en], [qz, odi, py]),
+        ([an, odi], [qz, en, gr]),
+        ([an, en], [qz, odi, sp]),
+        ([an, en], [qz, mgts, di]),
+        ([an, en], [qz, mgts, gr]),
+        ([an, en], [qz, di, py]),
+        ([an, di], [qz, en, gr]),
+        ([an, en], [qz, di, sp]),
+        ([an, hed], [qz, fs, gr]),
+        ([an, fs], [qz, hed, alm]),
+        ([an, fs], [qz, hed, her]),
+        ([an, cEn], [qz, odi, mgts]),
+        ([an, py], [qz, odi, mgts]),
+        ([an, cEn], [qz, odi, py]),
+        ([an, odi], [qz, cEn, gr]),
+        ([an, cEn], [qz, odi, sp]),
+        ([an, py], [qz, odi, sp]),
+        ([odi, py], [qz, an, fo]),
+        ([an, odi], [qz, gr, sp]),
+        ([an, fo], [qz, odi, sp]),
+        ([an, cEn], [qz, mgts, di]),
+        ([an, py], [qz, mgts, di]),
+        ([an, cEn], [qz, mgts, gr]),
+        ([an, py], [qz, mgts, gr]),
+        ([an, cEn], [qz, di, py]),
+        ([an, di], [qz, cEn, gr]),
+        ([an, cEn], [qz, di, sp]),
+        ([an, py], [qz, di, sp]), 
+        ([di, py], [qz, an, fo]), 
+        ([an, di], [qz, gr, sp]),
+        ([an, fo], [qz, di, sp]),
+        ([an, hed], [qz, gr, her]),
+        ([an, alm], [qz, hed, her]),
+        ([hed, alm], [qz, an, fa]),
+        ([an, fa], [qz, hed, her]),
+        # ([en, fs], [qz, fo, fa]), # underdetermined
+        ([en, cats], [qz, odi, sp]),
+        ([en, gr], [qz, odi, sp]),
+        ([mgts, alm], [qz, en, her]),
+        ([en, cats], [qz, di, sp]),
+        ([en, gr], [qz, di, sp]),
+        ([en, alm], [qz, py, fa]), 
+        ([alm, sp], [qz, en, her]),
+        ([fs, cats], [qz, hed, her]),
+        ([fs, gr], [qz, hed, her]),
+        ([fs, py], [qz, alm, fo]),
+        ([py, her], [qz, fs, sp]),
+        ([mgts, hed], [qz, odi, her]),
+        ([odi, mgts], [qz, cats, fo]),
+        ([cEn, cats], [qz, odi, sp]),
+        ([cEn, gr], [qz, odi, sp]),
+        ([odi, cats], [qz, gr, sp]),
+        ([odi, cats], [qz, gr, fo]),
+        ([odi, py], [qz, gr, fo]),
+        ([odi, sp], [qz, gr, fo]),
+        ([mgts, hed], [qz, di, her]),
+        ([mgts, di], [qz, cats, fo]),
+        # ([mgts, py], [qz, cEn, sp]), ### underdetermined
+        ([mgts, alm], [qz, cEn, her]),
+        ([mgts, gr], [qz, cats, fo]),
+        ([mgts, alm], [qz, py, her]),
+        ([mgts, fa], [qz, py, her]),
+        ([cEn, cats], [qz, di, sp]),
+        ([cEn, gr], [qz, di, sp]),
+        ([di, cats], [qz, gr, sp]),
+        ([di, cats], [qz, gr, fo]),
+        ([di, py], [qz, gr, fo]),
+        ([di, sp], [qz, gr, fo]),
+        ([hed, cats], [qz, gr, her]),
+        ([hed, cats], [qz, gr, fa]),
+        ([hed, alm], [qz, gr, fa]),
+        ([hed, her], [qz, gr, fa]),
+        ([cEn, alm], [qz, py, fa]),
+        ([alm, sp], [qz, cEn, her]),
+        ([cats, py], [qz, gr, sp]),
+        ([cats, alm], [qz, gr, her]),
+        ([cats, fo], [qz, gr, sp]),
+        ([cats, fa], [qz, gr, her]),
+        ([an, jd], [ky, ab, gr]),
+        ([an, mgts], [ky, en, cats]),
+        ([an, mgts], [ky, en, gr]),
+        ([an, py], [ky, en, cats]),
+        ([an, sp], [ky, en, cats]),
+        ([an, py], [ky, en, gr]),
+        ([an, fo], [ky, en, gr]),
+        ([an, alm], [ky, fs, cats]),
+        ([an, her], [ky, fs, cats]),
+        ([an, alm], [ky, fs, gr]),
+        ([an, fa], [ky, fs, gr]),
+        ([an, mgts], [ky, odi, gr]),
+        ([an, py], [ky, odi, gr]),
+        ([an, py], [ky, odi, fo]),
+        ([an, mgts], [ky, di, gr]),
+        ([an, mgts], [ky, cEn, cats]),
+        ([an, mgts], [ky, cEn, gr]),
+        ([an, sp], [ky, mgts, gr]),
+        ([an, py], [ky, di, gr]),
+        ([an, py], [ky, di, fo]),
+        ([an, alm], [ky, hed, gr]),
+        ([an, alm], [ky, hed, fa]),
+        ([an, py], [ky, cEn, cats]),
+        ([an, sp], [ky, cEn, cats]),
+        ([an, py], [ky, cEn, gr]),
+        ([an, fo], [ky, cEn, gr]),
+        ([an, sp], [ky, cats, py]),
+        ([an, her], [ky, cats, alm]),
+        ([ab, mgts], [ky, en, jd]),
+        ([ab, py], [ky, en, jd]),
+        ([ab, sp], [ky, en, jd]),
+        ([ab, alm], [ky, fs, jd]),
+        ([ab, her], [ky, fs, jd]),
+        ([ab, mgts], [ky, cEn, jd]),
+        ([ab, py], [ky, cEn, jd]),
+        ([ab, sp], [ky, cEn, jd]),
+        ([ab, sp], [ky, jd, py]),
+        ([ab, her], [ky, jd, alm]),
+        ([fs, mgts], [ky, en, her]),
+        ([fs, mgts], [ky, en, fa]),
+        ([fs, py], [ky, en, fa]),
+        ([en, alm], [ky, fs, fo]),
+        ([fs, sp], [ky, en, fa]),
+        ([en, her], [ky, fs, fo]),
+        ([en, cats], [ky, odi, sp]),
+        ([en, cats], [ky, odi, fo]),
+        ([en, gr], [ky, odi, fo]),
+        ([mgts, fa], [ky, en, her]),
+        ([en, cats], [ky, di, sp]),
+        ([en, cats], [ky, di, fo]),
+        ([en, gr], [ky, di, fo]),
+        ([en, cats], [ky, gr, sp]),
+        ([py, alm], [ky, en, her]),
+        ([py, fa], [ky, en, her]),
+        ([alm, sp], [ky, en, her]),
+        ([en, her], [ky, alm, fo]),
+        ([fs, mgts], [ky, cEn, her]),
+        ([fs, mgts], [ky, cEn, fa]),
+        ([fs, mgts], [ky, py, her]),
+        ([mgts, alm], [ky, fs, sp]),
+        ([fs, mgts], [ky, alm, fo]),
+        ([mgts, her], [ky, fs, sp]),
+        ([fs, mgts], [ky, her, fo]),
+        ([fs, cats], [ky, hed, her]),
+        ([fs, cats], [ky, hed, fa]),
+        ([fs, gr], [ky, hed, fa]),
+        ([fs, py], [ky, cEn, fa]),
+        ([cEn, alm], [ky, fs, fo]),
+        ([fs, sp], [ky, cEn, fa]),
+        ([cEn, her], [ky, fs, fo]),
+        ([fs, cats], [ky, gr, her]),
+        ([py, alm], [ky, fs, sp]),
+        ([py, her], [ky, fs, sp]),
+        ([fs, sp], [ky, py, fa]),
+        ([alm, fo], [ky, fs, sp]),
+        ([cEn, cats], [ky, odi, sp]),
+        ([cEn, cats], [ky, odi, fo]),
+        ([cEn, gr], [ky, odi, fo]),
+        ([odi, cats], [ky, gr, fo]),
+        ([mgts, fa], [ky, cEn, her]),
+        ([mgts, alm], [ky, py, fa]),
+        ([mgts, her], [ky, alm, sp]),
+        ([mgts, fa], [ky, her, fo]),
+        ([cEn, cats], [ky, di, sp]),
+        ([cEn, cats], [ky, di, fo]),
+        ([cEn, gr], [ky, di, fo]),
+        ([di, cats], [ky, gr, fo]),
+        ([hed, cats], [ky, gr, fa]),
+        ([cEn, cats], [ky, gr, sp]),
+        ([py, alm], [ky, cEn, her]),
+        ([py, fa], [ky, cEn, her]),
+        ([alm, sp], [ky, cEn, her]),
+        ([cEn, her], [ky, alm, fo]),
+        ([cats, py], [ky, gr, fo]),
+        ([cats, alm], [ky, gr, fa]),
+        ([py, her], [ky, sp, fa]),
+        ([alm, sp], [ky, her, fo]),
+        ([odi, mgts], [an, en, sp]),
+        ([en, cats], [an, odi, sp]),
+        ([odi, py], [an, en, sp]),
+        ([odi, py], [an, en, fo]),
+        ([en, odi, sp], [an, fo]),
+        ([mgts, di], [an, en, sp]),
+        ([mgts, hed], [an, en, her]),
+        ([en, cats], [an, di, sp]),
+        ([di, py], [an, en, sp]),
+        ([di, py], [an, en, fo]),
+        ([en, di, sp], [an, fo]),
+        ([hed, py], [an, en, her]),
+        ([cats, py], [an, en, sp]),
+        ([en, cats], [an, gr, sp]),
+        ([en, gr, sp], [an, fo]),
+        ([odi, alm], [an, fs, sp]),
+        ([di, alm], [an, fs, sp]),
+        ([fs, cats], [an, hed, her]),
+        ([hed, alm], [an, fs, her]),
+        ([hed, alm], [an, fs, fa]),
+        ([fs, hed, her], [an, fa]),
+        ([fs, cats], [an, gr, her]),
+        ([cats, alm], [an, fs, her]),
+        ([fs, gr, her], [an, fa]),
+        ([mgts, hed], [an, odi, fa]),
+        ([odi, mgts], [an, cEn, sp]),
+        ([cEn, cats], [an, odi, sp]),
+        ([odi, py], [an, cEn, sp]),
+        ([odi, py], [an, cEn, fo]),
+        ([odi, cEn, sp], [an, fo]),
+        ([py, gr], [an, odi, sp]),
+        ([mgts, hed], [an, di, fa]),
+        ([mgts, di], [an, cEn, sp]),
+        ([mgts, hed], [an, cEn, her]),
+        ([cats, py], [an, mgts, fo]),
+        ([cEn, cats], [an, di, sp]),
+        ([di, py], [an, cEn, sp]),
+        ([di, py], [an, cEn, fo]),
+        ([di, cEn, sp], [an, fo]),
+        ([py, gr], [an, di, sp]),
+        ([hed, py], [an, cEn, her]),
+        ([gr, alm], [an, hed, her]),
+        ([cats, py], [an, cEn, sp]),
+        ([cEn, cats], [an, gr, sp]),
+        ([cEn, gr, sp], [an, fo]),
+        ([cats, fo], [an, gr, sp]),
+        ([cats, fa], [an, gr, her]),
+        ([jd, py], [ab, en, sp]),
+        ([jd, alm], [ab, fs, her]),
+        ([jd, py], [ab, mgts, fo]),
+        ([jd, py], [ab, cEn, sp]),
+        ([odi, alm], [en, fs, gr]),
+        ([di, alm], [en, fs, gr]),
+        ([hed, py], [en, fs, gr]),
+        ([py, fa], [en, fs, sp]),
+        ([alm, fo], [en, fs, her]),
+        ([odi, alm], [en, mgts, hed]),
+        ([di, alm], [en, mgts, hed]),
+        ([mgts, hed], [en, gr, alm]),
+        ([alm, sp], [en, mgts, her]),
+        ([mgts, fa], [en, alm, sp]),
+        ([alm, fo], [en, mgts, fa]),
+        ([mgts, sp, fa], [en, her]),
+        ([hed, py], [en, gr, alm]),
+        ([py, fa], [en, alm, sp]),
+        ([py, fo, fa], [en, her]),
+        ([alm, fo], [en, sp, fa]),
+        ([mgts, hed], [fs, odi, cats]),
+        ([mgts, hed], [fs, odi, gr]),
+        ([odi, alm], [fs, mgts, hed]),
+        ([odi, alm], [fs, mgts, cats]),
+        ([odi, alm], [fs, cEn, gr]),
+        ([odi, alm], [fs, py, gr]),
+        ([mgts, hed], [fs, di, cats]),
+        ([mgts, hed], [fs, di, gr]),
+        ([di, alm], [fs, mgts, hed]),
+        ([di, alm], [fs, mgts, cats]),
+        ([py, fa], [fs, mgts, fo]),
+        ([alm, sp], [fs, mgts, her]),
+        ([alm, fo], [fs, mgts, sp]),
+        ([mgts, her, fo], [fs, sp]),
+        ([di, alm], [fs, cEn, gr]),
+        ([di, alm], [fs, py, gr]),
+        ([hed, py], [fs, cEn, gr]),
+        ([py, fa], [fs, cEn, sp]),
+        ([alm, fo], [fs, cEn, her]),
+        ([alm, fo], [fs, py, her]),
+        ([py, fa], [fs, her, fo]),
+        ([alm, fo, fa], [fs, sp]),
+        ([mgts, hed, cEn], [odi, alm]),
+        ([hed, sp], [odi, cats, fa]),
+        ([hed, cats, fo], [odi, her]),
+        ([cats, sp, fa], [odi, her]),
+        ([di, alm], [mgts, hed, cEn]),
+        ([cEn, gr, alm], [mgts, hed]),
+        ([py, gr, alm], [mgts, hed]),
+        ([alm, sp], [mgts, cEn, her]),
+        ([cEn, alm, sp], [mgts, fa]),
+        ([alm, fo], [mgts, cEn, fa]),
+        ([cEn, her], [mgts, sp, fa]),
+        ([py, her], [mgts, fo, fa]),
+        ([hed, sp], [di, cats, fa]),
+        ([hed, cats, fo], [di, her]),
+        ([cats, sp, fa], [di, her]),
+        ([cEn, gr, alm], [hed, py]),
+        ([cats, her, fo], [hed, sp]),
+        ([py, fa], [cEn, alm, sp]),
+        ([py, fo, fa], [cEn, her]),
+        ([alm, fo], [cEn, sp, fa]),
+    ]
     
-    generate_reaction(outdir,version,'eclogitization_2024',phases,reactions)
-      
+    generate_reaction(outdir,version, 'eclogitization_2024', phases, reactions_2024)
+    generate_reaction(outdir,version, 'abdullaziz', phases_mafic, reactions_abdullaziz)
+    generate_reaction(outdir,version, 'claude', phases_mafic, reactions_claude)
+
 def generate_reaction(outdir, version, name, phases, reactions):
     
     dbfile = os.path.join(os.path.pardir, 'database', 'tcg_{}_database.tar.gz'.format(version))
