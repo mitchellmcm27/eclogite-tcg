@@ -1,8 +1,7 @@
 **This is the code associated with "Reactive thermodynamics of crustal eclogitization and foundering" by McMillan, M., Sim, S.J., and and Wilson, C.R.**
 
-Cite the paper: TBD
+Citation: https://doi.org/10.1016/j.epsl.2025.119302
 
-Cite the code: https://doi.org/10.5281/zenodo.10835975
 
 ## Installation
 
@@ -18,13 +17,22 @@ Within the repository, build an image from the provided Dockerfile, giving it a 
 
 ```bash
 cd eclogite-tcg
-docker build -t eclogite -f ./docker/Dockerfile.dev
 ```
 
-Then run the **eclogite** image, making sure to bind the **eclogite-tcg** directory so that any changes will be reflected on your local machine:
+```bash
+docker build -t eclogite -f ./docker/Dockerfile.dev .
+```
+(note the final period, which provides the path to the build context).
+
+Then run the **eclogite** image. Here we mount two volumes (`-v`) in the container:
+1. Bind the local **eclogite-tcg** directory so that any changes will be reflected on our local machine; 
+2. Create a named volume, **database**, so that the reactions that were compiled during the Docker build will persist inside the container (otherwise the entire **eclogite-tcg** folder and its contents will be replaced in the container with the local contents)
 
 ```bash
-docker run -it --rm -v $PWD:/home/tcg/shared/eclogite-tcg eclogite
+docker run -it --rm \
+  -v $PWD:/home/tcg/shared/eclogite-tcg \
+  -v database:/home/tcg/shared/eclogite-tcg/tcg_slb_database \
+  eclogite
 ```
 
 This will start an interactive shell in the container from which you can run the models.
