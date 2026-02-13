@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+
+import numpy as np
+from itertools import combinations
+from fractions import Fraction
+from math import gcd
+from functools import reduce
+
+# Elements order: Si, O, Al, Ca, Na, Mg, Fe
+#                  0   1   2   3   4   5   6
+
+compounds = {
+    'qz':   ([1, 2, 0, 0, 0, 0, 0], "SiO2"),
+    'ky':   ([1, 5, 2, 0, 0, 0, 0],  "Al2SiO5"),
+    'an':   ([2, 8, 2, 1, 0, 0, 0],  "CaAl2Si2O8"),
+    'ab':   ([3, 8, 1, 0, 1, 0, 0],  "NaAlSi3O8"),
+    'oEn':  ([2, 6, 0, 0, 0, 2, 0],  "Mg2Si2O6"),
+    'fs':   ([2, 6, 0, 0, 0, 0, 2],  "Fe2Si2O6"),
+    'oDi':  ([2, 6, 0, 1, 0, 1, 0],  "CaMgSi2O6"),
+    'mgts': ([1, 6, 2, 0, 0, 1, 0],  "MgAl2SiO6"),
+    'di':   ([2, 6, 0, 1, 0, 1, 0],  "CaMgSi2O6"),
+    'hed':  ([2, 6, 0, 1, 0, 0, 1],  "CaFeSi2O6"),
+    'cEn':  ([2, 6, 0, 0, 0, 2, 0],  "Mg2Si2O6"),
+    'cats': ([1, 6, 2, 1, 0, 0, 0],  "CaAl2SiO6"),
+    'jd':   ([2, 6, 1, 0, 1, 0, 0],  "NaAlSi2O6"),
+    'pyp':  ([3, 12, 2, 0, 0, 3, 0], "Mg3Al2Si3O12"),
+    'gs':   ([3, 12, 2, 3, 0, 0, 0], "Ca3Al2Si3O12"),
+    'alm':  ([3, 12, 2, 0, 0, 0, 3], "Fe3Al2Si3O12"),
+    'mgsp': ([0, 4, 2, 0, 0, 1, 0],  "MgAl2O4"),
+    'herc': ([0, 4, 2, 0, 0, 0, 1],  "FeAl2O4"),
+    'fo':   ([1, 4, 0, 0, 0, 2, 0],  "Mg2SiO4"),
+    'fa':   ([1, 4, 0, 0, 0, 0, 2],  "Fe2SiO4"),
+}
+
+names = list(compounds.keys())
+vectors = [np.array(compounds[n][0], dtype=float) for n in names]
+n_compounds = len(names)
+
+def find_integer_null_vector(matrix):
+    """Find the null space. If it's 1D, return the integer-normalized vector."""
+    # matrix is (n_elements x n_species)
+    u, s, vh = np.linalg.svd(matrix)
+    # Count near-zero singular values
+    tol = 1e-8
+    null_dim = np.sum(s < tol)
+    # Also account for case where matrix has more columns than rows
+    # SVD of (m x n) gives s of length min(m,n), null space dim = n - rank
+    rank = np.sum(s > tol)
+    n_species = matrix.shape[1]
+    null_space_dim = n_species - rank
+    
+    if null_space_dim != 1:
+        return None
+    
+    # The null vector is the last row of vh
+    null_vec = vh[-1, :]
+    
+    # Verify it's actually in the null space
+    if np.max(np.abs(matrix @ null_vec)) > 1e-6:
+        return None
+    
+    # Convert to rational and find integer representation
+    # Scale so the smallest nonzero absolute value is 1
+    nonzero = np.abs(null_vec[np.abs(null_vec) > 1e-10])
+    if len(nonzero) == 0:
+        return None
+    
+    null_vec = null_vec / np.min(nonzero)
+    
+    # Try to find integer representation using Fraction
+    fracs = []
+    for v in null_vec:
+        if abs(v) < 1e-10:
+            fracs.append(Fraction(0))
+        else:
+            fracs.append(Fraction(v).limit_denominator(1000))
+    
+    # Find LCM of denominators
+    denoms = [f.denominator for f in fracs]
+    lcm = denoms[0]
+    for d in denoms[1:]:
+        lcm = lcm * d // gcd(lcm, d)
+    
+    int_vec = [int(f * lcm) for f in fracs]
+    
+    # Reduce by GCD
+    nonzero_ints = [abs(x) for x in int_vec if x != 0]
+    if not nonzero_ints:
+        return None
+    g = reduce(gcd, nonzero_ints)
+    int_vec = [x // g for x in int_vec]
+    
+    # Verify balance
+    check = np.zeros(len(vectors[0]))
+    # We need to map back... actually we have the matrix columns
+    result = matrix @ np.array(int_vec, dtype=float)
+    if np.max(np.abs(result)) > 1e-6:
+        return None
+    
+    return int_vec
+
+results = []
+max_compounds = 5
+for size in range(2, max_compounds+1):  # 2 to 6 compounds
+    print(f"Checking subsets of size {size}...")
+    for combo in combinations(range(n_compounds), size):
+        # Build matrix: each column is a compound vector
+        mat = np.column_stack([vectors[i] for i in combo])
+        
+        int_vec = find_integer_null_vector(mat)
+        if int_vec is None:
+            continue
+        
+        # Separate into reactants (positive) and products (negative)
+        # Convention: ensure the first nonzero coefficient is positive
+        first_nonzero = next(v for v in int_vec if v != 0)
+        if first_nonzero < 0:
+            int_vec = [-v for v in int_vec]
+        
+        reactants = []
+        products = []
+        for idx, coeff in zip(combo, int_vec):
+            if coeff > 0:
+                reactants.append((coeff, names[idx]))
+            elif coeff < 0:
+                products.append((-coeff, names[idx]))
+        
+        if reactants and products:
+            results.append((reactants, products, size))
+
+# Sort by size then alphabetically
+results.sort(key=lambda r: (r[2], str(r[0]), str(r[1])))
+
+written = {}
+header = """
+an = ['Feldspar', 'Anorthite']    
+ab = ['Feldspar', 'Albite']
+fs = ['Orthopyroxene', 'Ferrosilite']
+oEn = ['Orthopyroxene', 'Enstatite']
+mgts = ['Orthopyroxene', 'MgTschermaks']
+oDi = ['Orthopyroxene', 'OrthoDiopside']
+hed = ['Clinopyroxene', 'Hedenbergite']
+di = ['Clinopyroxene', 'Diopside']
+jd = ['Clinopyroxene', 'Jadeite']
+cats = ['Clinopyroxene', 'CaTschermaks']
+cEn = ['Clinopyroxene', 'Clinoenstatite']
+alm = ['Garnet', 'Almandine']
+pyp = ['Garnet', 'Pyrope']
+gs = ['Garnet', 'Grossular']
+qz = ['Quartz', 'Quartz']
+ky = ['Kyanite', 'Kyanite']
+mgsp = ['Spinel', 'MgSpinel']
+herc = ['Spinel', 'Hercynite']
+fo = ['Olivine', 'Forsterite']
+fa = ['Olivine', 'Fayalite']
+"""
+with open("scripts/reactions_claude_{}.py".format(max_compounds), "w") as text_file:
+    text_file.write(header)
+    text_file.write("\n")
+    text_file.write("reactions_claude = [\n")
+    for i, (reactants, products, size) in enumerate(results, 1):
+        lhs = " + ".join(f"{c} {compounds[n][1]}" for c, n in reactants)
+        rhs = " + ".join(f"{c} {compounds[n][1]}" for c, n in products)
+        
+        # Tuple format
+        r_names = []
+        for c, n in reactants:
+            r_names.extend([n] * 1)
+        p_names = []
+        for c, n in products:
+            p_names.extend([n] * 1)
+        key = f"{r_names}_{p_names}".replace("[","").replace("]","").replace("'","")
+        tup = f"({r_names}, {p_names})".replace("'","")
+        if key in written:
+            continue
+        else:
+            text_file.write(tup+", # {} = {} \n".format(lhs,rhs))
+            written[key] = True
+    text_file.write("]")
+
+print(f"\nFound {len(written)} reactions:\n")

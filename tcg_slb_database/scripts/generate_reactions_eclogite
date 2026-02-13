@@ -7,6 +7,7 @@ import numpy as np
 import sympy as sym
 from collections import OrderedDict
 from thermocodegen.coder import coder
+from reactions_claude_5 import reactions_claude
 
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python'))
 from tcg_slb.reactions import SLBReactions
@@ -261,7 +262,7 @@ def generate_reactions(outdir,version):
         # ^^^^^^^^ Whiteboard etc. 10-30-2024
     ]
 
-    reactions_claude = [
+    reactions_claude_1 = [
         ([cEn], [oEn]),
         ([di], [oDi]),
         ([an], [qz, cats]),
