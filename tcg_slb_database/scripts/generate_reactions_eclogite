@@ -7,7 +7,7 @@ import numpy as np
 import sympy as sym
 from collections import OrderedDict
 from thermocodegen.coder import coder
-from reactions_claude_5 import reactions_claude
+from reactions_claude_7 import reactions_claude
 
 sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python'))
 from tcg_slb.reactions import SLBReactions

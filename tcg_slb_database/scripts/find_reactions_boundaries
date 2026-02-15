@@ -1,0 +1,295 @@
+#!/usr/bin/env python3
+
+import numpy as np
+from itertools import combinations
+from fractions import Fraction
+
+# NCFMAS => c=6 components
+max_compounds = 7 # c + 1
+
+# Define compounds: formula, name, abbreviation, phase
+compounds = [
+    ("SiO2", "quartz", "qz", "Qz"),
+    ("Al2SiO5", "kyanite", "ky", "Ky"),
+    ("CaAl2Si2O8", "anorthite", "an", "Pl"),
+    ("NaAlSi3O8", "albite", "ab", "Pl"),
+    ("Mg2Si2O6", "enstatite", "oEn", "Opx"),
+    ("Fe2Si2O6", "ferrosilite", "fs", "Opx"),
+    ("CaMgSi2O6", "orthodiopside", "oDi", "Opx"),
+    ("MgAl2SiO6", "Mg-Tschermaks", "mgts", "Opx"),
+    ("CaMgSi2O6", "diopside", "di", "Cpx"),
+    ("CaFeSi2O6", "hedenbergite", "hed", "Cpx"),
+    ("Mg2Si2O6", "clinoenstatite", "cEn", "Cpx"),
+    ("CaAl2SiO6", "Ca-Tschermaks", "cats", "Cpx"),
+    ("NaAlSi2O6", "jadeite", "jd", "Cpx"),
+    ("Mg3Al2Si3O12", "pyrope", "pyp", "Gt"),
+    ("Ca3Al2Si3O12", "grossular", "gs", "Gt"),
+    ("Fe3Al2Si3O12", "almandine", "alm", "Gt"),
+    ("MgAl2O4", "spinel", "mgsp", "Sp"),
+    ("FeAl2O4", "hercynite", "herc", "Sp"),
+    ("Mg2SiO4", "forsterite", "fo", "O"),
+    ("Fe2SiO4", "fayalite", "fa", "O"),
+]
+
+def get_phase(compound_phase):
+    return compound_phase
+
+# Parse chemical formula into element counts
+def parse_formula(formula):
+    elements = {}
+    i = 0
+    while i < len(formula):
+        # Get element symbol (uppercase followed by optional lowercase)
+        if formula[i].isupper():
+            elem = formula[i]
+            i += 1
+            if i < len(formula) and formula[i].islower():
+                elem += formula[i]
+                i += 1
+            # Get count
+            count_str = ""
+            while i < len(formula) and formula[i].isdigit():
+                count_str += formula[i]
+                i += 1
+            count = int(count_str) if count_str else 1
+            elements[elem] = elements.get(elem, 0) + count
+        else:
+            i += 1
+    return elements
+
+# Build compound data
+compound_data = []
+all_elements = set()
+for formula, name, abbrev, phase in compounds:
+    elements = parse_formula(formula)
+    all_elements.update(elements.keys())
+    compound_data.append({
+        'formula': formula,
+        'name': name,
+        'abbrev': abbrev,
+        'phase': phase,
+        'elements': elements
+    })
+
+all_elements = sorted(list(all_elements))
+print(f"Elements: {all_elements}")
+print(f"Number of compounds: {len(compound_data)}")
+
+# Create composition matrix (elements x compounds)
+n_elements = len(all_elements)
+n_compounds = len(compound_data)
+A = np.zeros((n_elements, n_compounds))
+
+for j, comp in enumerate(compound_data):
+    for elem, count in comp['elements'].items():
+        i = all_elements.index(elem)
+        A[i, j] = count
+
+print(f"Composition matrix shape: {A.shape}")
+
+# Function to check if a set of compounds can form a unique balanced reaction
+def find_unique_reaction(compound_indices):
+    """
+    Given a set of compound indices, check if there's a unique (up to scaling) 
+    non-trivial solution to the null space of the submatrix.
+    Returns (reactants, products, coefficients) if unique, None otherwise.
+    """
+    submatrix = A[:, compound_indices]
+    
+    # Use SVD to find null space
+    U, S, Vh = np.linalg.svd(submatrix)
+    
+    # Count near-zero singular values (null space dimension)
+    tol = 1e-10
+    null_dim = np.sum(S < tol)
+    
+    # For a unique reaction, null space dimension should be exactly 1
+    if null_dim != 1:
+        return None
+    
+    # Get the null space vector (last row of Vh)
+    null_vector = Vh[-1, :]
+    
+    # Check if all coefficients are zero (shouldn't happen if null_dim=1)
+    if np.allclose(null_vector, 0):
+        return None
+    
+    # Normalize to have integer coefficients
+    # Find the smallest non-zero coefficient magnitude
+    nonzero = np.abs(null_vector[np.abs(null_vector) > tol])
+    if len(nonzero) == 0:
+        return None
+    
+    # Scale to make smallest coefficient = 1
+    min_coef = np.min(nonzero)
+    scaled = null_vector / min_coef
+    
+    # Try to find integer coefficients using fractions
+    fracs = []
+    for val in scaled:
+        if np.abs(val) < tol:
+            fracs.append(Fraction(0))
+        else:
+            fracs.append(Fraction(val).limit_denominator(1000))
+    
+    # Find LCM of denominators
+    from math import gcd
+    def lcm(a, b):
+        return abs(a * b) // gcd(a, b)
+    
+    denominators = [f.denominator for f in fracs]
+    common_denom = 1
+    for d in denominators:
+        common_denom = lcm(common_denom, d)
+    
+    int_coeffs = [int(f * common_denom) for f in fracs]
+    
+    # Simplify by GCD
+    nonzero_coeffs = [abs(c) for c in int_coeffs if c != 0]
+    if len(nonzero_coeffs) == 0:
+        return None
+    
+    g = nonzero_coeffs[0]
+    for c in nonzero_coeffs[1:]:
+        g = gcd(g, c)
+    
+    int_coeffs = [c // g for c in int_coeffs]
+    
+    # Verify the reaction is balanced
+    result = np.zeros(n_elements)
+    for i, idx in enumerate(compound_indices):
+        result += int_coeffs[i] * A[:, idx]
+    
+    if not np.allclose(result, 0):
+        return None
+    
+    # Separate into reactants (negative) and products (positive)
+    # Convention: make the first non-zero coefficient positive
+    first_nonzero = next(c for c in int_coeffs if c != 0)
+    if first_nonzero < 0:
+        int_coeffs = [-c for c in int_coeffs]
+    
+    reactants = []
+    products = []
+    
+    for i, idx in enumerate(compound_indices):
+        if int_coeffs[i] < 0:
+            reactants.append((compound_data[idx], -int_coeffs[i]))
+        elif int_coeffs[i] > 0:
+            products.append((compound_data[idx], int_coeffs[i]))
+    
+    if len(reactants) == 0 or len(products) == 0:
+        return None
+    
+    return (reactants, products)
+
+def check_polymorphic_reaction(reactants, products):
+    if len(reactants) == 1 and len(products) == 1 and reactants[0][0]["formula"] == products[0][0]["formula"]:
+        return True
+    return False
+
+# Function to check if reaction satisfies phase boundary constraints
+def check_phase_boundary(reactants, products):
+    """
+    Check if there exists at least one phase boundary C with sides A and B such that:
+    - All reactant phases R are a subset of one side (A or B)
+    - All product phases P are a subset of the other side (B or A)
+    
+    In other words: (R ⊆ A and P ⊆ B) or (R ⊆ B and P ⊆ A)
+    """
+    reactant_phases = set([r[0]["phase"] for r in reactants])
+    product_phases = set([r[0]["phase"] for r in products])
+
+    # A valid phase boundary differs by 1 phase, 
+    # and all others are the same (the intersection equals one of the sets)
+    if (abs(len(reactant_phases) - len(product_phases)) == 1) and \
+       ((product_phases & reactant_phases) == product_phases or (product_phases & reactant_phases) == reactant_phases):
+        #print(reactant_phases, "=", product_phases)
+        #print("\n")
+        return True
+    
+    return False
+
+# Find all valid reactions
+print("\nSearching for valid reactions...")
+valid_reactions = []
+
+
+for n_total in range(2, max_compounds+1):
+    print(f"Checking combinations of {n_total} compounds...")
+    
+    for combo in combinations(range(n_compounds), n_total):
+        # First check for unique balanced reaction
+        result = find_unique_reaction(list(combo))
+        if result is not None:
+            reactants, products = result
+            
+            # Extract abbreviations for phase boundary check
+            reactant_abbrevs = [r["abbrev"] for r, coef in reactants]
+            product_abbrevs = [p["abbrev"] for p, coef in products]
+            
+            # Then check phase boundary constraint
+            if check_phase_boundary(reactants, products) or check_polymorphic_reaction(reactants, products):
+                valid_reactions.append((reactants, products))
+
+print(f"\nFound {len(valid_reactions)} valid reactions")
+
+# Remove duplicates (same reaction with reversed roles)
+def normalize_reaction(reactants, products):
+    """Normalize a reaction for comparison"""
+    r = tuple(sorted([(r[0]["abbrev"], r[1]) for r in reactants]))
+    p = tuple(sorted([(p[0]["abbrev"], p[1]) for p in products]))
+    # Always put the "smaller" side first
+    if r > p:
+        r, p = p, r
+    return (r, p)
+
+unique_reactions = {}
+for reactants, products in valid_reactions:
+    key = normalize_reaction(reactants, products)
+    if key not in unique_reactions:
+        unique_reactions[key] = (reactants, products)
+
+print(f"Unique reactions: {len(unique_reactions)}")
+
+# Format output as tuples
+print("\n" + "="*60)
+print("VALID BALANCED REACTIONS:")
+print("="*60)
+
+output_tuples = []
+for reactants, products in unique_reactions.values():
+    r_abbrevs = [r["abbrev"] for r, coef in reactants]
+    p_abbrevs = [r["abbrev"] for r, coef in products]    
+    output_tuples.append((r_abbrevs, p_abbrevs))
+
+written = {}
+header = """
+an = ['Feldspar', 'Anorthite']    
+ab = ['Feldspar', 'Albite']
+fs = ['Orthopyroxene', 'Ferrosilite']
+oEn = ['Orthopyroxene', 'Enstatite']
+mgts = ['Orthopyroxene', 'MgTschermaks']
+oDi = ['Orthopyroxene', 'OrthoDiopside']
+hed = ['Clinopyroxene', 'Hedenbergite']
+di = ['Clinopyroxene', 'Diopside']
+jd = ['Clinopyroxene', 'Jadeite']
+cats = ['Clinopyroxene', 'CaTschermaks']
+cEn = ['Clinopyroxene', 'Clinoenstatite']
+alm = ['Garnet', 'Almandine']
+pyp = ['Garnet', 'Pyrope']
+gs = ['Garnet', 'Grossular']
+qz = ['Quartz', 'Quartz']
+ky = ['Kyanite', 'Kyanite']
+mgsp = ['Spinel', 'MgSpinel']
+herc = ['Spinel', 'Hercynite']
+fo = ['Olivine', 'Forsterite']
+fa = ['Olivine', 'Fayalite']
+"""
+with open("scripts/reactions_claude_{}.py".format(max_compounds), "w") as text_file:
+    text_file.write(header)
+    text_file.write("\n")
+    text_file.write("reactions_claude = [\n")
+    for tup in output_tuples:
+        text_file.write(f"    {tup},\n".replace("'",""))
+    text_file.write("]")
