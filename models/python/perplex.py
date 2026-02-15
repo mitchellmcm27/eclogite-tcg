@@ -134,10 +134,10 @@ def ppx_point_composition(rxn, name):
                 Fi0[n] = Fs.get("Gt",0.)
             if p.abbrev()=="ky":
                 Fi0[n] = Fs.get("ky",0.)
+            if p.abbrev()=="ol":
+                Fi0[n] = Fs.get("O", 0.)
             if p.abbrev()=="sp":
-                Fi0[6] = Fs.get("Sp",0.)
-            if p.abbrev()=="co":
-                Fi0[6] = Fs.get("Aki",0.)
+                Fi0[n] = Fs.get("Sp",0.)
 
         Fi0 = [f/100 for f in Fi0]
         
@@ -147,6 +147,10 @@ def ppx_point_composition(rxn, name):
             Xik0[i][0] = 1.
 
         import re
+
+
+        # Match up endmember mol% to our phases
+        # The order of each endmember is different in perplex vs. tcg
         for line in x:
             l = re.sub(r'\s+',' ', line.strip())
             [phase, rest] = l.split(" ", 1)
@@ -156,9 +160,6 @@ def ppx_point_composition(rxn, name):
                 ems.append(float(v))
             if(phase=="Pl"):
                 Xik0[3] = [ems[1],ems[0]]
-            elif(phase=="Sp"):
-                if len(Xik0)>=7:
-                    Xik0[6] = [ems[1],ems[0]]
             elif(phase=="Cpx"):
                 Xik0[0] = [ems[1], ems[2], ems[3], ems[4], ems[0]]
             elif(phase=="Opx"):
@@ -179,7 +180,12 @@ def ppx_point_composition(rxn, name):
                 elif(len(ems)==3):
                     # 3 endmember garnet
                     Xik0[4] = [ems[2], ems[1], ems[0], 0., 0.,]
-
+            elif(phase=="Sp") and len(Xik0)>6:
+                Xik0[6] = [ems[0], ems[1]]
+            elif(phase=="O") and len(Xik0)>7:
+                Xik0[7] = [ems[0], ems[1]]
+    
+        print(Xik0)
         phii0 = None
         Cik0 = None
         return Fi0, Xik0, phii0, Cik0
