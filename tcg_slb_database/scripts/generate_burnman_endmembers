@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+import os,sys
+import pandas as pd
+from thermocodegen.coder import coder
+
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir, 'python'))
+from tcg_slb.burnman_endmember import BurnmanEndmember, get_names_for_database
+
+def generate_endmembers(outdir, database):
+  reference= 'generate_burnman_endmembers' 
+  em_suffix = f'_{database}_em'
+
+  try:
+      os.mkdir(outdir)
+  except FileExistsError:
+      pass
+
+  names = get_names_for_database(database)
+
+  for name in names:
+      # clean up names to make them coder compliant
+      name = name.replace('-','_')+em_suffix
+      formula = None  # Replace with actual formula if available
+      em = BurnmanEndmember(database, name, reference)
+      print(em.tofile(outdir))
+
+if __name__ == "__main__":
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser( \
+                           description="""Generate emmls for SLB thermodynamic database.""")
+    parser.add_argument('-o', '--outdir', action='store', metavar='outdir', 
+                        default=os.path.join(os.path.dirname(__file__), os.path.pardir, 'database', 'endmembers'), type=str, required=False,
+                        help='Output directory for emml files (defaults to ../database/endmembers relative to script).')
+    parser.add_argument('-d', '--database', action='store', metavar="database", default='SLB_2011', type=str, required=False,
+                        help='SLB database version as "SLB_2011" (default) or "SLB_2021".')
+    args = parser.parse_args()
+
+    generate_endmembers(args.outdir, args.database)
